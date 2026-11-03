@@ -1,99 +1,126 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Component, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Activity, ArrowDownUp, ArrowRight, BookOpen, Bus, CalendarDays, Check, ChevronDown, Clock3, Compass, ExternalLink, GraduationCap, Image, Info, MapPin, Menu, Navigation, Search, ShieldCheck, Sparkles, WifiOff, X } from 'lucide-react';
 import './style.css';
-import './assistant.css';
+import './styles/academics.css';
+import './styles/campus-study.css';
+import './styles/app-pages.css';
+import './styles/admin.css';
+import './styles/responsive.css';
+import { AppProvider, useApp } from './context.jsx';
+import { RouterProvider, useRouter, routeTitle } from './lib/router.jsx';
+import { Shell } from './components/Shell.jsx';
+import { ErrorScreen, LoadingScreen } from './components/ui.jsx';
+import Today from './pages/Today.jsx';
+import Timetable from './pages/Timetable.jsx';
+import Students from './pages/Students.jsx';
+import Faculty from './pages/Faculty.jsx';
+import MapPage from './pages/MapPage.jsx';
+import Study from './pages/Study.jsx';
+import Notices from './pages/Notices.jsx';
+import Ask from './pages/Ask.jsx';
+import Settings from './pages/Settings.jsx';
+import About from './pages/About.jsx';
+import Legacy from './pages/Legacy.jsx';
+import Admin from './pages/Admin.jsx';
 
-const DATA = ['campus','timetable','notices','papers','syllabus','rooms','sources'];
-const load = async (name) => { const r = await fetch(`/data/${name}.json`); if (!r.ok) throw new Error(`Could not load ${name}`); return r.json(); };
-const photoPath = (src='') => {
- if (src.endsWith('/main-gate.jpg')) return '/img/hero/gndec_2022_newgate.jpg';
- if (src.endsWith('/library.jpg')) return '/img/gallery/library-sign.jpg';
- return src.replace('/assets/img/','/img/');
+const PAGES = {
+  '/today': Today,
+  '/timetable': Timetable,
+  '/students': Students,
+  '/faculty': Faculty,
+  '/map': MapPage,
+  '/study': Study,
+  '/notices': Notices,
+  '/ask': Ask,
+  '/settings': Settings,
+  '/about': About,
+  '/legacy': Legacy,
+  '/admin': Admin,
 };
-const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
-const initials = s => (s||'GN').split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
-const distance = (a,b) => { const rad=x=>x*Math.PI/180, dLat=rad(b.lat-a.lat), dLon=rad(b.lon-a.lon), v=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2; return 6371000*2*Math.atan2(Math.sqrt(v),Math.sqrt(1-v)); };
 
-function App(){
- const [data,setData]=useState({}), [tab,setTab]=useState('home'), [query,setQuery]=useState(''), [day,setDay]=useState(Math.max(0,new Date().getDay()-1)), [profile,setProfile]=useState(()=>{try{return JSON.parse(localStorage.getItem('compass-profile'))||{section:'ECB'}}catch{return {section:'ECB'}}}), [menu,setMenu]=useState(false), [routeFrom,setRouteFrom]=useState('main-gate'), [routeTo,setRouteTo]=useState('library'), [selectedPhoto,setSelectedPhoto]=useState(null), [offline,setOffline]=useState(!navigator.onLine), [busy,setBusy]=useState(true);
- useEffect(()=>{Promise.all(DATA.map(async k=>[k,await load(k)])).then(x=>setData(Object.fromEntries(x))).catch(e=>console.error(e)).finally(()=>setBusy(false)); const on=()=>setOffline(!navigator.onLine);addEventListener('online',on);addEventListener('offline',on);return()=>{removeEventListener('online',on);removeEventListener('offline',on)}},[]);
- const campus=data.campus, places=campus?.places||[], timetable=data.timetable;
- const sections=timetable?.sections||[], section=sections.find(s=>s.id===profile.section)||sections.find(s=>s.id==='ECB');
- const todayLectures=(section?.lectures||[]).filter(l=>l.day===day).sort((a,b)=>a.period-b.period);
- const filteredPlaces=places.filter(p=>`${p.name} ${p.category} ${p.description||''}`.toLowerCase().includes(query.toLowerCase()));
- const filteredNotices=(data.notices?.notices||[]).filter(n=>`${n.title} ${n.kind}`.toLowerCase().includes(query.toLowerCase())).slice(0,30);
- const gallery=(campus?.gallery||[]).filter(p=>p.src && !/people|student|event/i.test(p.title+' '+p.caption));
- const selectedPlace=places.find(p=>p.id===routeTo);
- const route=useMemo(()=>findRoute(campus,routeFrom,routeTo),[campus,routeFrom,routeTo]);
- function saveProfile(e){e.preventDefault();localStorage.setItem('compass-profile',JSON.stringify(profile));document.getElementById('profile-dialog')?.close();}
- const nav=[['home','Today',Activity],['timetable','Timetable',CalendarDays],['map','Campus map',MapPin],['explore','Explore',Compass],['study','Study',BookOpen],['assistant','Campus helper',Sparkles]];
- return <div className="app-shell">
-  <header className="topbar"><a className="brand" href="#home" onClick={()=>setTab('home')}><span className="brand-mark">C</span><span>GNDEC <b>Compass</b><small>STUDENT CAMPUS GUIDE</small></span></a><div className="top-search"><Search size={17}/><input aria-label="Search campus" placeholder="Search places, notices, subjects…" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&setTab('explore')}/><kbd>⌘ K</kbd></div><div className="top-actions">{offline&&<span className="offline"><WifiOff size={15}/> Offline</span>}<button className="profile-button" onClick={()=>document.getElementById('profile-dialog')?.showModal()} title="Set your timetable"><span className="avatar">{initials(section?.id||'EC')}</span><span className="profile-label">{section?.id||'Set profile'}<small>My section</small></span><ChevronDown size={15}/></button><button className="icon-button mobile-menu" onClick={()=>setMenu(!menu)} aria-label="Open navigation">{menu?<X/>:<Menu/>}</button></div></header>
-  <div className="layout"><aside className={`sidebar ${menu?'show':''}`}><div className="side-label">YOUR CAMPUS</div>{nav.map(([id,label,Icon])=><button key={id} className={`nav-item ${tab===id?'active':''}`} onClick={()=>{setTab(id);setMenu(false)}}><Icon size={18}/>{label}{id==='map'&&<span className="nav-new">MAP</span>}</button>)}<div className="side-label second">QUICK LINKS</div><a className="nav-item" href="https://gndec.ac.in/" target="_blank" rel="noreferrer"><ExternalLink size={17}/>GNDEC official site</a><a className="nav-item" href="https://appsc.gndec.ac.in/time_tables" target="_blank" rel="noreferrer"><ExternalLink size={17}/>Official timetables</a><div className="side-card"><div className="side-card-icon"><ShieldCheck size={17}/></div><b>Built from real sources</b><p>Official college pages and maps. Route paths are approximate—check signs on campus.</p><button onClick={()=>setTab('about')}>How this works <ArrowRight size={14}/></button></div><div className="side-foot">GNDEC Ludhiana · Student project<br/>Not an official college service</div></aside>
-   <main className="main-content">{busy?<div className="loading"><div className="spinner"/><span>Getting your campus ready…</span></div>:<>
-    {tab==='home'&&<Home data={data} section={section} day={day} setDay={setDay} lectures={todayLectures} places={places} setTab={setTab} setRouteTo={setRouteTo} setRouteFrom={setRouteFrom} setQuery={setQuery} setSelectedPhoto={setSelectedPhoto}/>}
-    {tab==='timetable'&&<Timetable sections={sections} profile={profile} setProfile={setProfile} section={section} day={day} setDay={setDay} lectures={todayLectures} data={data}/>}
-    {tab==='map'&&<MapView campus={campus} places={places} from={routeFrom} to={routeTo} setFrom={setRouteFrom} setTo={setRouteTo} route={route} selectedPlace={selectedPlace} setPhoto={setSelectedPhoto}/>}
-    {tab==='explore'&&<Explore places={filteredPlaces} notices={filteredNotices} gallery={gallery} query={query} setQuery={setQuery} setTab={setTab} setRouteTo={setRouteTo} setPhoto={setSelectedPhoto}/>}
-    {tab==='study'&&<Study data={data}/>}{tab==='assistant'&&<Assistant data={data} section={section} day={day} lectures={todayLectures} places={places} setTab={setTab} setRouteTo={setRouteTo}/>}{tab==='about'&&<About sources={data.sources}/>}
-   </>}</main>
-  </div>
-  <nav className="bottom-nav">{nav.slice(0,5).map(([id,label,Icon])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><Icon size={20}/><span>{label==='Campus map'?'Map':label}</span></button>)}</nav>
-  <dialog id="profile-dialog" className="dialog"><form onSubmit={saveProfile}><button className="dialog-close" type="button" onClick={()=>document.getElementById('profile-dialog')?.close()} aria-label="Close"><X/></button><span className="eyebrow">PERSONALISE YOUR COMPASS</span><h2>Your section, your schedule</h2><p>Saved only on this device. No student number or name is needed.</p><label className="field-label" htmlFor="section-select">B.Tech timetable section</label><select id="section-select" value={profile.section} onChange={e=>setProfile({...profile,section:e.target.value})}>{sections.filter(s=>s.year===1).map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select><button className="primary full" type="submit"><Check size={17}/> Save section</button></form></dialog>
-  {selectedPhoto&&<dialog open className="photo-dialog" onClick={()=>setSelectedPhoto(null)}><button aria-label="Close image" className="photo-close"><X/></button><img src={photoPath(selectedPhoto.src)} alt={selectedPhoto.title}/><div><b>{selectedPhoto.title}</b><p>{selectedPhoto.caption}</p><small>Photo source: {selectedPhoto.credit||'GNDEC public gallery'}</small></div></dialog>}
- </div>
+function NotFound() {
+  return (
+    <div className="not-found">
+      <span className="eyebrow">404 · OFF THE MAP</span>
+      <h1>That path isn’t on the campus plan.</h1>
+      <p>The page may have moved, or the link may be out of date. Try one of these instead.</p>
+      <div className="not-found-links">
+        <a className="btn primary" href="/today">Go to Today</a>
+        <a className="btn secondary" href="/timetable">Open timetable</a>
+        <a className="btn ghost" href="/map">Campus map</a>
+      </div>
+    </div>
+  );
 }
 
-function SectionHeader({eyebrow,title,description,children}){return <div className="section-head"><div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1>{description&&<p>{description}</p>}</div>{children}</div>}
-function Home({data,section,day,setDay,lectures,places,setTab,setRouteFrom,setRouteTo,setQuery,setSelectedPhoto}){
- const greeting=new Date().getHours()<12?'Good morning':new Date().getHours()<17?'Good afternoon':'Good evening';const now=new Date();const today=now.getDay();const dateLabel=new Intl.DateTimeFormat('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(now).toUpperCase().replace(',',' ·');
- const upcoming=lectures.find(l=>l.end>now.toTimeString().slice(0,5));const nearest=places.find(p=>p.id==='library');const cover=(data.campus?.gallery||[]).find(x=>x.place==='main-gate')||{};
- return <><section className="welcome"><div className="welcome-copy"><span className="eyebrow pale">{dateLabel}</span><h1>{greeting},<br/><em>let’s make it count.</em></h1><p>Your campus day, with less guesswork.</p><button className="welcome-cta" onClick={()=>setTab('timetable')}>Open my day <ArrowRight size={16}/></button></div><div className="welcome-photo" style={{backgroundImage:`linear-gradient(90deg,rgba(17,51,45,.05),rgba(17,51,45,.18)),url(${photoPath(cover.src||'/img/hero/gndec_2022_newgate.jpg')})`}}><span className="photo-tag"><MapPin size={13}/> GNDEC · Gill Road</span></div><div className="welcome-stamp"><span>GNDEC</span><b>Compass</b><small>YOUR DAY, IN VIEW</small></div></section>
- <div className="date-row"><div><span className="date-icon"><CalendarDays size={17}/></span><div><b>{today===0||today===6?'Weekend mode':days[Math.max(0,today-1)]}</b><small>{section?.label||'Choose your section'} · 2026–27</small></div></div><button className="text-button" onClick={()=>setTab('timetable')}>Full timetable <ArrowRight size={15}/></button></div>
- <div className="home-grid"><section className="panel day-panel"><div className="panel-title"><div><span className="eyebrow">YOUR CLASSES</span><h2>{upcoming?'Coming up':'Today at a glance'}</h2></div><button className="subtle-select" onClick={()=>setTab('timetable')}>{section?.id||'Set section'} <ChevronDown size={14}/></button></div><div className="weekday-strip">{days.slice(0,5).map((d,i)=><button className={day===i?'chosen':''} key={d} onClick={()=>setDay(i)}><small>{d.slice(0,3)}</small><b>{new Date(Date.now()+((i-(today-1)+7)%7)*86400000).getDate()}</b></button>)}</div>{lectures.length?<div className="class-list">{lectures.slice(0,5).map((l,i)=><div className={`class-row ${i===0?'next':''}`} key={l.id}><div className="time"><b>{l.start}</b><small>{l.end}</small></div><span className="class-line"/><div className="class-main"><b>{l.subject}</b><small>{l.teacher||l.teachers?.join(', ')||section?.id} · {l.room||'Room not listed'}</small></div><span className={`class-chip ${i===0?'now':''}`}>{i===0?'NEXT':l.room?'CLASS':'ROOM TBC'}</span></div>)}</div>:<div className="empty-state"><CalendarDays/><b>No classes listed for this day</b><span>Check the official timetable for updates.</span></div>}<p className="source-note"><Info size={13}/> Source: official FET timetable export, 17 Sep 2026. Confirm changes with your department.</p></section>
- <div className="right-stack"><section className="panel next-panel"><div className="panel-title"><div><span className="eyebrow">CAMPUS SHORTCUT</span><h2>Where to next?</h2></div><span className="round-illustration"><Navigation size={19}/></span></div><p>Plan a walk between the gate, academic blocks, library and more.</p><button className="route-shortcut" onClick={()=>{setRouteFrom('main-gate');setRouteTo(nearest?.id||'library');setTab('map')}}><span><MapPin size={16}/> Main Gate <ArrowRight size={14}/> Library</span><b>Open route <ArrowRight size={15}/></b></button><div className="mini-map-art"><span className="art-path"/><span className="art-node n1"/><span className="art-node n2"/><span className="art-node n3"/><span className="art-label l1">GATE</span><span className="art-label l2">CAMPUS</span><span className="art-label l3">LIBRARY</span></div><small className="source-note"><Info size={13}/> Approximate walking guide · check campus signs</small></section><section className="notice-card"><div><span className="eyebrow pale">FROM THE NOTICE BOARD</span><h2>{data.notices?.notices?.[0]?.title||'Official college updates'}</h2><p>{data.notices?.notices?.[0]?.displayDate||'GNDEC official website'}</p></div><button aria-label="See notices" onClick={()=>{setTab('explore');setQuery('')}}><ArrowRight/></button></section></div></div>
- <section className="quick-section"><div className="quick-heading"><div><span className="eyebrow">MADE FOR CAMPUS LIFE</span><h2>Everything you need, <em>in one place.</em></h2></div><button className="text-button" onClick={()=>setTab('explore')}>Explore campus <ArrowRight size={15}/></button></div><div className="quick-grid">{[['map','Campus map','Find your way around campus','/img/gallery/campus-road.jpg',MapPin],['timetable','My timetable','Classes, rooms and the week ahead','/img/gallery/academic-block.jpg',CalendarDays],['study','Study hub','Syllabus, papers and course material','/img/gallery/library-sign.jpg',BookOpen],['explore','Campus gallery','Real views from around GNDEC','/img/gallery/auditorium-a.jpg',Image],['assistant','Campus helper','Answers from cached campus data','/img/gallery/campus-courtyard.jpg',Sparkles]].map(([id,title,desc,img,Icon])=><button className="quick-card" key={id} onClick={()=>setTab(id)}><span className="quick-image" style={{backgroundImage:`url(${img})`}}><span><Icon size={16}/></span></span><span className="quick-card-copy"><b>{title}</b><small>{desc}</small><ArrowRight size={15}/></span></button>)}</div></section><Footer/></>
+class Boundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="app-fallback">
+          <ErrorScreen
+            message={`The app hit an unexpected error: ${this.state.error.message || 'unknown error'}`}
+            onRetry={() => window.location.reload()}
+          />
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
-function Timetable({sections,profile,setProfile,section,day,setDay,lectures,data}){return <><SectionHeader eyebrow="YOUR WEEK, MADE SIMPLE" title="Timetable" description="Section-wise schedule from the official FET timetable export."><select className="head-select" value={profile.section} onChange={e=>{const v=e.target.value;setProfile({...profile,section:v});localStorage.setItem('compass-profile',JSON.stringify({...profile,section:v}))}}>{sections.filter(s=>s.year===1).map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></SectionHeader><div className="panel timetable-panel"><div className="weekday-tabs">{days.map((d,i)=><button key={d} className={day===i?'selected':''} onClick={()=>setDay(i)}><span>{d}</span><small>{i===new Date().getDay()-1?'TODAY':''}</small></button>)}</div><div className="class-list large">{lectures.length?lectures.map(l=><div className="class-row" key={l.id}><div className="time"><b>{l.start}</b><small>{l.end}</small></div><span className="class-line"/><div className="class-main"><b>{l.subject}</b><small>{l.teacher||l.teachers?.join(', ')||'Faculty not listed'}</small></div><span className="room-tag">{l.room||'Room TBC'}</span></div>):<div className="empty-state"><CalendarDays/><b>No classes listed</b><span>Check the official timetable export for changes.</span></div>}</div></div><p className="source-note standalone"><Info size={14}/> {data.timetable?.source?.label} · <a href={data.timetable?.source?.index} target="_blank" rel="noreferrer">View official timetable page <ExternalLink size={12}/></a></p><Footer/></>}
+function App() {
+  const { loading, loadError, reload } = useApp();
+  const { path } = useRouter();
 
-function findRoute(campus,from,to){if(!campus||from===to)return null;const nodes=[...campus.junctions,...campus.places.filter(p=>p.node&&!campus.junctions.some(j=>j.id===p.node)).map(p=>({id:p.node,name:p.name,lat:p.lat,lon:p.lon,pos:p.pos}))];const byId=Object.fromEntries(nodes.map(n=>[n.id,n]));const source=campus.places.find(p=>p.id===from),target=campus.places.find(p=>p.id===to);if(!source||!target)return null;const start=source.node,end=target.node;if(!byId[start]||!byId[end])return {source,target,steps:[],meters:distance(source,target),approx:true};const graph={};for(const n of nodes)graph[n.id]=[];for(const edge of campus.edges){const a=byId[edge.a],b=byId[edge.b];if(!a||!b)continue;const w=distance(a,b);graph[edge.a].push({id:edge.b,w,note:edge.note});graph[edge.b].push({id:edge.a,w,note:edge.note});}const dist={[start]:0},prev={};const queue=[start];while(queue.length){queue.sort((a,b)=>dist[a]-dist[b]);const id=queue.shift();if(id===end)break;for(const edge of graph[id]||[])if(dist[id]+edge.w<(dist[edge.id]??Infinity)){dist[edge.id]=dist[id]+edge.w;prev[edge.id]={id,note:edge.note};if(!queue.includes(edge.id))queue.push(edge.id)}}if(dist[end]==null)return {source,target,steps:[],meters:distance(source,target),approx:true};const path=[];let at=end;while(at!==start){path.unshift({node:byId[at],note:prev[at]?.note});at=prev[at].id}return {source,target,steps:path,meters:dist[end],approx:true}}
-function MapView({campus,places,from,to,setFrom,setTo,route,selectedPlace,setPhoto}){const mapPlaces=places.filter(p=>p.pos?.length===2),x=p=>p.pos[0]*900,y=p=>p.pos[1]*600;return <><SectionHeader eyebrow="WALK THE CAMPUS" title="Campus map" description="A practical guide to shared GNDEC and GND Polytechnic landmarks. Distances and paths are estimates."><a className="official-link" href="https://www.openstreetmap.org/?mlat=30.8592&mlon=75.8613#map=17/30.8592/75.8613" target="_blank" rel="noreferrer"><ExternalLink size={15}/> Open live map</a></SectionHeader><div className="map-layout"><section className="map-card"><svg className="campus-map" viewBox="0 0 900 600" role="img" aria-label="Schematic campus map with paths and landmarks"><rect width="900" height="600" fill="#f4f4e9"/>{campus?.geometry?.map((g,i)=><polygon key={i} points={g.pts.map(p=>`${x({pos:p})},${y({pos:p})}`).join(' ')} fill={g.type==='building'?'#e2d9bf':g.kind==='school'?'#d6ead7':'#eae6da'} stroke="#d0c6ae" strokeWidth="1"/>)}{campus?.edges?.map((e,i)=>{const a=campus.junctions.find(n=>n.id===e.a)||mapPlaces.find(p=>p.node===e.a),b=campus.junctions.find(n=>n.id===e.b)||mapPlaces.find(p=>p.node===e.b);return a?.pos&&b?.pos?<line key={i} x1={x(a)} y1={y(a)} x2={x(b)} y2={y(b)} className="map-path"/>:null})}{campus?.junctions?.map(j=><circle key={j.id} cx={x(j)} cy={y(j)} r="5" className="junction"/>)}{mapPlaces.map(p=><g key={p.id} onClick={()=>setTo(p.id)} className="map-marker" role="button" tabIndex="0" aria-label={p.name}><circle cx={x(p)} cy={y(p)} r={p.id===to?13:9} className={`place-dot ${p.id===to?'destination':''}`}/><text x={x(p)+12} y={y(p)+4}>{p.name.length>24?p.name.slice(0,23)+'…':p.name}</text></g>)}{route?.steps?.length>0&&<polyline points={[route.source,...route.steps.map(s=>s.node)].filter(p=>p.pos).map(p=>`${x(p)},${y(p)}`).join(' ')} className="route-line"/>}</svg><div className="map-attribution">Schematic campus guide · Geometry from OpenStreetMap contributors · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a></div></section><aside className="route-panel"><span className="eyebrow">PLAN A WALK</span><h2>Get directions</h2><label className="field-label" htmlFor="route-from">Starting point</label><div className="route-select"><span className="start-dot"/><select id="route-from" value={from} onChange={e=>setFrom(e.target.value)}>{places.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div><button className="swap-button" onClick={()=>{setFrom(to);setTo(from)}} aria-label="Swap start and destination"><ArrowDownUp size={15}/></button><label className="field-label" htmlFor="route-to">Destination</label><div className="route-select"><span className="end-dot"/><select id="route-to" value={to} onChange={e=>setTo(e.target.value)}>{places.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>{route&&<><div className="route-result"><div><b>{Math.round(route.meters)} m</b><small>estimated walk · {Math.max(1,Math.ceil(route.meters/75))} min</small></div><span className="walk-icon"><Navigation size={18}/></span></div>{route.steps.length?<ol className="directions">{route.steps.map((s,i)=><li key={i}><span>{i+1}</span><div><b>{s.node.name}</b><small>{s.note}</small></div></li>)}</ol>:<p className="muted">A mapped walking path is not available between these points. Use the live map or ask on campus.</p>}</>}<div className="route-disclaimer"><Info size={15}/><p>Illustrative route based on campus map data. Paths, access and distance need on-site confirmation. Follow signs and ask staff if unsure.</p></div>{selectedPlace?.photo&&<button className="place-photo" onClick={()=>setPhoto(campus.gallery.find(p=>p.place===selectedPlace.id))}><img src={photoPath(selectedPlace.photo)} alt=""/><span><Image size={15}/> View place photo <ArrowRight size={14}/></span></button>}</aside></div><div className="map-place-strip">{places.slice(0,8).map(p=><button key={p.id} onClick={()=>setTo(p.id)} className={to===p.id?'chosen':''}><MapPin size={14}/>{p.name}</button>)}</div><Footer/></>}
+  useEffect(() => {
+    const title = routeTitle(path);
+    document.title = `${title} · GNDEC Compass`;
+    const description = document.querySelector('meta[name="description"]');
+    if (description && path === '/today') {
+      description.setAttribute(
+        'content',
+        'GNDEC Compass 2.0 — section timetables, campus walking routes, student and faculty directories, notices, previous-year papers and an offline campus assistant for GNDEC Ludhiana.',
+      );
+    }
+  }, [path]);
 
-function Explore({places,notices,gallery,query,setQuery,setTab,setRouteTo,setPhoto}){const[mode,setMode]=useState('places');return <><SectionHeader eyebrow="GET TO KNOW YOUR CAMPUS" title="Explore GNDEC" description="Places, photos and current notices gathered from public college sources."><div className="explore-search"><Search size={16}/><input placeholder="Search campus…" value={query} onChange={e=>setQuery(e.target.value)}/></div></SectionHeader><div className="pill-tabs">{[['places','Places'],['photos','Photos'],['notices','Notices']].map(([id,t])=><button key={id} className={mode===id?'active':''} onClick={()=>setMode(id)}>{t}</button>)}</div>{mode==='places'&&<div className="place-grid">{places.map(p=><article className="place-card" key={p.id}><button className="place-photo-button" onClick={()=>{setRouteTo(p.id);setTab('map')}}><img src={photoPath(p.photo||'/img/gallery/academic-block.jpg')} alt="" loading="lazy"/><span className="place-category">{p.category}</span></button><div className="place-copy"><h3>{p.name}</h3><p>{p.description||'A campus landmark. Ask staff for current access details.'}</p><button onClick={()=>{setRouteTo(p.id);setTab('map')}}>Directions <ArrowRight size={14}/></button><small>{p.photoCredit||'Source: campus public data'}{p.verified?' · location checked':' · location approximate'}</small></div></article>)}</div>}{mode==='photos'&&<div className="gallery-grid">{gallery.map((p,i)=><button key={`${p.src}-${i}`} className="gallery-card" onClick={()=>setPhoto(p)}><img src={photoPath(p.src)} alt={p.title} loading="lazy"/><span><b>{p.title}</b><small>{p.credit}</small></span></button>)}</div>}{mode==='notices'&&<div className="notice-list">{notices.map(n=><a className="notice-row" href={n.url} target="_blank" rel="noreferrer" key={n.id}><span className="notice-date">{n.displayDate||'Official notice'}</span><b>{n.title}</b><span className="notice-kind">{n.kind}</span><ExternalLink size={15}/></a>)}</div>}<Footer/></>}
+  if (loading) return <LoadingScreen />;
 
-function Assistant({data,section,day,lectures,places,setTab,setRouteTo}){
- const [messages,setMessages]=useState([{from:'helper',text:'Hi! I can look up your section timetable, campus landmarks, public notices, syllabus and past-paper links. My answers use data cached on this device.'}]);
- const [question,setQuestion]=useState('');
- function answer(raw){
-  const q=raw.toLowerCase(), trim=s=>s.replace(/\s+/g,' ').trim();
-  if(/class|timetable|schedule|lecture|today|period/.test(q)){
-   const list=lectures||[];return {text:list.length?`For ${section?.label||section?.id||'your section'} on ${days[day]||'the selected day'}, I found ${list.length} timetable entries: ${list.slice(0,5).map(l=>`${l.start} ${trim(l.subject)}${l.room?` · ${l.room}`:''}`).join('; ')}${list.length>5?'; and more in your timetable':''}.`:`I don’t see classes listed for ${section?.label||'this section'} on ${days[day]||'the selected day'}. Check the current department timetable.`,source:data.timetable?.source?.index};
+  if (loadError) {
+    return (
+      <div className="app-fallback">
+        <ErrorScreen message={loadError} onRetry={reload} />
+      </div>
+    );
   }
-  const place=places.find(p=>[p.name,...(p.aliases||[])].some(alias=>alias&&q.includes(alias.toLowerCase())));
-  if(place)return {text:`${place.name}: ${place.description||'This landmark is listed in the campus guide.'}${place.verified?' Its map location is marked checked.':' The map location is approximate.'}`,place:place.id,source:data.sources?.sources?.find(s=>/map|campus|college/i.test(s.label))?.url};
-  if(/notice|circular|holiday|exam|date sheet|event/.test(q)){
-   const words=q.split(/\W+/).filter(word=>word.length>4&&!['notices','notice','show','latest','recent','update','updates'].includes(word));const n=(data.notices?.notices||[]).find(x=>!words.length||words.some(word=>x.title.toLowerCase().includes(word)));
-   if(n)return {text:`${n.title} (${n.displayDate||n.date||'date not listed'}). Open the official notice for details.`,source:n.url};
-   return {text:'I couldn’t find a matching notice in the cached list. The official notice board may have newer updates.',source:'https://erp.gndec.ac.in/notice'};
-  }
-  if(/paper|question|syllabus|scheme|semester|subject|course/.test(q)){
-   const term=q.match(/[a-z]{2,4}-\d{2,4}/i)?.[0]||q.split(/\W+/).filter(word=>word.length>3&&!['find','paper','papers','question','previous','course','subject'].includes(word)).at(-1)||q.trim();
-   const found=(data.papers?.papers||[]).find(p=>`${p.code} ${p.title} ${p.name}`.toLowerCase().includes(term.toLowerCase()));
-   const syl=(data.syllabus?.documents||[]).find(d=>`${d.title} ${d.branchName} ${d.semester}`.toLowerCase().includes(term.toLowerCase()));
-   if(found)return {text:`I found ${found.code} · ${found.name||found.title} (${found.session||found.year||'session not listed'}).`,source:found.view||found.download};
-   if(syl)return {text:`I found ${syl.title}. Check the semester and scheme against your current batch before using it.`,source:syl.url};
-   return {text:'I couldn’t match that phrase to a paper or syllabus title. Try a course code (for example AM-101), or browse the Study hub.',study:true};
-  }
-  return {text:'I’m not sure from the cached college sources. Try asking about your timetable, a named campus place, an official notice, a course code, or a syllabus. For urgent/current details, ask college staff or use the official website.',source:'https://gndec.ac.in/'};
- }
- function submit(e){e.preventDefault();const q=question.trim();if(!q)return;const result=answer(q);setMessages(old=>[...old,{from:'you',text:q},{from:'helper',...result}]);setQuestion('')}
- return <><SectionHeader eyebrow="ON-DEVICE CAMPUS Q&A" title="Campus helper" description="Quick answers from the timetable and public college data cached on this device."/><div className="assistant-wrap"><div className="assistant-banner"><span><Sparkles size={17}/></span><div><b>Grounded in campus sources</b><small>Answers are matched from published data. This helper doesn’t invent routes, room access or changing policies.</small></div><span className="offline-label"><WifiOff size={13}/> Offline-ready</span></div><div className="chat-log" aria-live="polite">{messages.map((m,i)=><div key={i} className={`chat-message ${m.from==='you'?'user-message':''}`}><span className="chat-avatar">{m.from==='you'?initials(section?.id||'ME'):<Sparkles size={15}/>}</span><div className="chat-bubble"><p>{m.text}</p>{m.source&&<a href={m.source} target="_blank" rel="noreferrer">Open source <ExternalLink size={12}/></a>}{m.place&&<button onClick={()=>{setRouteTo(m.place);setTab('map')}}>Plan a walk here <ArrowRight size={13}/></button>}{m.study&&<button onClick={()=>setTab('study')}>Open Study hub <ArrowRight size={13}/></button>}</div></div>)}</div><form className="chat-form" onSubmit={submit}><input aria-label="Ask the campus helper" placeholder="Ask about your classes, the library, a notice…" value={question} onChange={e=>setQuestion(e.target.value)}/><button className="primary" type="submit" aria-label="Send question"><ArrowRight size={17}/></button></form><div className="suggested-questions"><span>TRY</span>{['What classes do I have?','Where is the library?','Show notices','Find AM-101 paper'].map(q=><button key={q} onClick={()=>setQuestion(q)}>{q}</button>)}</div></div><Footer/></>}
 
-function Study({data}){const syll=data.syllabus?.documents||[],papers=data.papers?.papers||[];const[mode,setMode]=useState('syllabus'),[search,setSearch]=useState('');const filtered=papers.filter(p=>`${p.code} ${p.title} ${p.name} ${p.department} ${p.session}`.toLowerCase().includes(search.toLowerCase())).slice(0,60);return <><SectionHeader eyebrow="LEARN AT YOUR PACE" title="Study hub" description="Official syllabus links and previous exam papers, collected in one place."/><div className="study-summary"><div><BookOpen/><b>{syll.length}</b><span>syllabus resources</span></div><div><GraduationCap/><b>{papers.length.toLocaleString('en-IN')}</b><span>past papers indexed</span></div><div><Clock3/><b>Anytime</b><span>open on your device</span></div></div><div className="study-controls"><div className="pill-tabs">{[['syllabus','Syllabus & scheme'],['papers','Previous papers']].map(([id,t])=><button key={id} className={mode===id?'active':''} onClick={()=>setMode(id)}>{t}</button>)}</div>{mode==='papers'&&<label className="explore-search"><Search size={15}/><input placeholder="Search course code, subject, session…" value={search} onChange={e=>setSearch(e.target.value)}/></label>}</div>{mode==='syllabus'?<div className="resource-list">{syll.map((d,i)=><a className="resource-row" key={d.id||i} href={d.url} target="_blank" rel="noreferrer"><span className="resource-icon"><BookOpen size={17}/></span><span><b>{d.title}</b><small>{d.branchName||d.branch||'GNDEC'} · {d.semester||'Syllabus'} · {d.scheme||'Official source'}</small></span><ExternalLink size={15}/></a>)}</div>:<div className="resource-list">{filtered.map((p,i)=><a className="resource-row" key={p.id||i} href={p.view||p.download} target="_blank" rel="noreferrer"><span className="resource-icon"><GraduationCap size={17}/></span><span><b>{p.code||p.title} · {p.name||p.title}</b><small>{p.department||'GNDEC'} · {p.session||p.year||'Exam paper'}{p.term?' · '+p.term:''}</small></span><ExternalLink size={15}/></a>)}{!filtered.length&&<div className="empty-state"><Search/><b>No matching papers found</b><span>Try a course code such as AM-101.</span></div>}{filtered.length===60&&<p className="source-note standalone">Showing the first 60 matches. Refine your search to narrow the list.</p>}</div>}<p className="source-note standalone"><Info size={14}/> Download links open official or indexed source files. Check your current scheme before studying.</p><Footer/></>}
-function About({sources}){return <><SectionHeader eyebrow="ABOUT THE PROJECT" title="A clearer way around campus" description="GNDEC Compass brings campus essentials into a lightweight, installable web app."/><div className="about-grid"><section className="panel"><span className="about-icon"><Sparkles/></span><h2>Helpful, grounded, transparent.</h2><p>Timetable, campus landmarks, study links and public notices, collected from college sources. The app identifies estimates clearly and keeps your chosen section on this device.</p><ul><li>Works offline after the first visit</li><li>No account or student number required</li><li>No student roster or profile sent to a server</li><li>GNDEC and GND Polytechnic share a campus; this guide covers shared landmarks</li></ul></section><section className="panel"><span className="eyebrow">SOURCES WE CHECK</span><h2>Follow it to the source.</h2>{(sources?.sources||[]).slice(0,8).map((s,i)=><a className="source-row" href={s.url} target="_blank" rel="noreferrer" key={i}><span>{s.label}</span><ExternalLink size={14}/></a>)}</section></div><div className="route-disclaimer wide"><Info size={17}/><p>Route lines, walking times and inferred room-to-building links are guides only. The public campus map doesn’t provide verified indoor navigation. Confirm locations with signs or college staff.</p></div><Footer/></>}
-function Footer(){return <footer className="footer"><span>GNDEC Compass · Student-built campus companion</span><span><a href="https://gndec.ac.in/" target="_blank" rel="noreferrer">GNDEC official</a> · <a href="#about">Sources & privacy</a> · v2.0</span></footer>}
+  const Page = PAGES[path] || NotFound;
 
-createRoot(document.getElementById('root')).render(<App/>);
+  return (
+    <Shell>
+      <Page />
+    </Shell>
+  );
+}
+
+createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <Boundary>
+      <AppProvider>
+        <RouterProvider>
+          <App />
+        </RouterProvider>
+      </AppProvider>
+    </Boundary>
+  </React.StrictMode>,
+);

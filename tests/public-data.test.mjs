@@ -22,7 +22,7 @@ test('campus routes reference known nodes and every place has a label and valid 
   assert.ok(campus.edges.every(edge => ids.has(edge.a) && ids.has(edge.b)));
 });
 
-test('published photo files exist and the public dataset omits student rosters and lookup indexes', () => {
+test('published photo files exist and the public roster omits private contact data', () => {
   const campus = read('campus');
   for (const item of campus.gallery) {
     if (!item.src) continue;
@@ -32,8 +32,19 @@ test('published photo files exist and the public dataset omits student rosters a
     const file = path.join(root, 'public', publicPath);
     assert.ok(fs.existsSync(file), `Missing public photo ${item.src}`);
   }
-  assert.ok(!fs.existsSync(path.join(dataDir, 'students.json')));
+  const students = read('students');
+  assert.ok(Array.isArray(students.records) && students.records.length > 1000);
+  assert.ok(students.records.every(student => student.crn && student.name && student.section));
+  assert.ok(students.records.every(student => !('phone' in student) && !('email' in student) && !('address' in student)));
   assert.ok(!fs.existsSync(path.join(dataDir, 'search.json')));
+});
+
+test('public contact data omits personal mobile numbers', () => {
+  const contacts = read('contacts');
+  assert.ok((contacts.roles || []).every(role => !('phone' in role)));
+  assert.ok((contacts.people || []).every(person => !('phone' in person) && !('phoneSource' in person)));
+  const mobilePattern = /\b[6-9]\d{9}\b/;
+  assert.ok(!mobilePattern.test(JSON.stringify(contacts)), 'contacts.json still contains a 10-digit mobile number');
 });
 
 test('source registry has official college references', () => {

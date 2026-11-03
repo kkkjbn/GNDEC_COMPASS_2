@@ -1,3 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /settings
+
 Sitemap: https://gndec-compass-v2.koushikjain2007.workers.dev/sitemap.xml

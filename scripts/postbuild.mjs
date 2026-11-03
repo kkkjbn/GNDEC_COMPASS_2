@@ -1,40 +1,113 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
-const walk = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(item => {
-  const full = path.join(dir, item.name);
-  return item.isDirectory() ? walk(full) : [full];
+const walk = (dir) =>
+  fs.readdirSync(dir, { withFileTypes: true }).flatMap((item) => {
+    const full = path.join(dir, item.name);
+    return item.isDirectory() ? walk(full) : [full];
+  });
+
+const precache = walk(dist)
+  .map((file) => `/${path.relative(dist, file).split(path.sep).join('/')}`)
+  .filter(
+    (url) =>
+      url === '/index.html' ||
+      url === '/manifest.webmanifest' ||
+      url === '/favicon.svg' ||
+      url === '/robots.txt' ||
+      url === '/sitemap.xml' ||
+      url.startsWith('/data/') ||
+      /^\/assets\/[^/]+\.(js|css)$/.test(url),
+  );
+
+const version = crypto.createHash('sha256').update(precache.join('|')).digest('hex').slice(0, 10);
+const cacheName = `gndec-compass-v2-${version}`;
+
+const worker = `const CACHE = '${cacheName}';
+const CORE = ${JSON.stringify(precache)};
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(CORE)).then(() => self.skipWaiting()));
 });
-const precache = walk(dist).map(file => `/${path.relative(dist, file).split(path.sep).join('/')}`).filter(url =>
-  url === '/index.html' || url === '/manifest.webmanifest' || url === '/favicon.svg' ||
-  url.startsWith('/data/') || /^\/assets\/[^/]+\.(js|css)$/.test(url)
-);
-const worker = `const CACHE = 'gndec-compass-v2';
-const PRECACHE = ${JSON.stringify(precache)};
-self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(PRECACHE)).then(() => self.skipWaiting())));
-self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('gndec-compass-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
-self.addEventListener('fetch', event => {
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith('gndec-compass-') && key !== CACHE).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+self.addEventListener('fetch', (event) => {
   const request = event.request;
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
+  if (request.method !== 'GET') return;
   const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match('/index.html')));
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) caches.open(CACHE).then((cache) => cache.put('/index.html', response.clone()));
+          return response;
+        })
+        .catch(() => caches.match('/index.html')),
+    );
     return;
   }
-  if (!url.pathname.startsWith('/data/') && !url.pathname.startsWith('/img/')) return;
-  event.respondWith(caches.open(CACHE).then(async cache => {
-    const cached = await cache.match(request);
-    const update = fetch(request).then(response => {
-      if (response.ok) cache.put(request, response.clone());
-      return response;
-    });
-    if (cached) { event.waitUntil(update.catch(() => {})); return cached; }
-    try { return await update; } catch { return Response.error(); }
-  }));
+
+  // Campus photos may live in the user-triggered offline media cache.
+  if (url.pathname.startsWith('/img/')) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request)
+          .then((response) => {
+            if (response.ok) caches.open(CACHE).then((cache) => cache.put(request, response.clone()));
+            return response;
+          })
+          .catch(() => Response.error());
+      }),
+    );
+    return;
+  }
+
+  const cacheFirst =
+    url.pathname.startsWith('/data/') ||
+    url.pathname.startsWith('/assets/') ||
+    url.pathname === '/manifest.webmanifest' ||
+    url.pathname === '/favicon.svg';
+
+  if (!cacheFirst) return;
+
+  event.respondWith(
+    caches.open(CACHE).then(async (cache) => {
+      const cached = await cache.match(request);
+      const update = fetch(request).then((response) => {
+        if (response.ok) cache.put(request, response.clone());
+        return response;
+      });
+      if (cached) {
+        event.waitUntil(update.catch(() => {}));
+        return cached;
+      }
+      try {
+        return await update;
+      } catch {
+        return Response.error();
+      }
+    }),
+  );
 });
 `;
+
 fs.writeFileSync(path.join(dist, 'sw.js'), worker);
-console.log(`Generated offline worker with ${precache.length} core files.`);
+console.log(`Generated offline worker ${cacheName} with ${precache.length} core files.`);

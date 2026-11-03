@@ -1,0 +1,191 @@
+{
+  "checkedAt": "2026-09-18T14:16:29.534Z",
+  "source": "https://gndec.ac.in/?q=node/6",
+  "roles": [
+    {
+      "role": "Principal",
+      "name": "Dr. Sehijpal Singh",
+      "landline": "0161-5064501",
+      "email": "principal@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line."
+    },
+    {
+      "role": "HoD - Civil Engineering",
+      "name": "Dr. Jagbir Singh",
+      "landline": "0161-5064536",
+      "email": "ce@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "99"
+    },
+    {
+      "role": "HoD - Computer Science and Engineering",
+      "name": "Dr. Kiran Jyoti",
+      "landline": "0161-5064501",
+      "email": "cse@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "364"
+    },
+    {
+      "role": "HoD - Electrical Engineering",
+      "name": "Dr. KD Singh",
+      "landline": "0161-5064501",
+      "email": "ee@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line."
+    },
+    {
+      "role": "HoD - Electronics and Communication Engineering",
+      "name": "Dr. Munish Rattan",
+      "landline": "0161-5064501",
+      "email": "ece@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "42"
+    },
+    {
+      "role": "HoD - Information Technology",
+      "name": "Dr. KS Maan",
+      "landline": "0161-5064501",
+      "email": "it@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "53",
+      "identitySource": "https://it.gndec.ac.in/"
+    },
+    {
+      "role": "HoD - Mechanical & Production Engineering",
+      "name": "Dr. Harmeet Singh",
+      "landline": "0161-5064501",
+      "email": "cme@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "6"
+    },
+    {
+      "role": "HoD - Computer Applications and Computer Centre",
+      "name": "Dr. Jasbir Singh Saini",
+      "landline": "0161-5064501",
+      "email": "mca@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line."
+    },
+    {
+      "role": "HoD - Business Administraton",
+      "name": "Dr. Parampal Singh",
+      "landline": "0161-5064501",
+      "email": "mba@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "168"
+    },
+    {
+      "role": "Controller of Examination",
+      "name": "Dr.Jasmaninder Singh Grewal",
+      "landline": "",
+      "email": "jsgrewal23023@gmail.com",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line."
+    },
+    {
+      "role": "AR Admin",
+      "name": "Mr. Ramandeep Singh",
+      "landline": "0161-5064501",
+      "email": "ramandeep.pta@gmail.com",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line."
+    },
+    {
+      "role": "AR Accounts",
+      "name": "Dr. Harnam Singh Farwaha",
+      "landline": "",
+      "email": "accounts@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "190"
+    },
+    {
+      "role": "Dean Academics",
+      "name": "Dr. Akshay Girdhar",
+      "landline": "0161-5064704",
+      "email": "deanacademic@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "46"
+    },
+    {
+      "role": "HR Manager",
+      "name": "Dr. Gurdeep Kaur",
+      "landline": "",
+      "email": "hrm@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line."
+    },
+    {
+      "role": "Training & Placement Officer",
+      "name": "Pf. Gagandeep Singh Sodhi",
+      "landline": "0161-2501106",
+      "email": "tpo@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "62"
+    },
+    {
+      "role": "Dean (R&C)",
+      "name": "Dr. Harvinder Singh",
+      "landline": "0161-2491193",
+      "email": "deanconsultancy@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "23"
+    },
+    {
+      "role": "Dean (Alumni)",
+      "name": "Er. Rupinderjit Singh",
+      "landline": "",
+      "email": "rjhkathuria@yahoo.co.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "conflict": "Official administration and ERP pages list different holders. Current appointment needs confirmation.",
+      "conflictSource": "https://erp.gndec.ac.in/gndec"
+    },
+    {
+      "role": "Dean (Student's Welfare)",
+      "name": "Dr. Parminder Singh",
+      "landline": "0161-5064551",
+      "email": "parminder2u@gmail.com",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "4"
+    },
+    {
+      "role": "Dean (Skill Enhancement Cell)",
+      "name": "Dr. Akshay Girdhar",
+      "landline": "",
+      "email": "skill_cell@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "profileId": "46"
+    },
+    {
+      "role": "Chief Warden",
+      "name": "Dr. Shehbaaz Singh Brar",
+      "landline": "0161-5064532",
+      "email": "cwb@gndec.ac.in",
+      "source": "https://gndec.ac.in/?q=node/6",
+      "contactScope": "Office contact published for this role; not necessarily a direct personal line.",
+      "conflict": "Official administration and ERP pages list different holders. Current appointment needs confirmation.",
+      "conflictSource": "https://erp.gndec.ac.in/gndec",
+      "profileId": "183"
+    }
+  ],
+  "people": [
+    {
+      "profileId": "42",
+      "office": "Ground Floor, Electronics Block, GNDEC, Ludhiana",
+      "source": "https://ece.gndec.ac.in/"
+    }
+  ]
+}

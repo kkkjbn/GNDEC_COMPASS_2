@@ -1,12 +1,46 @@
 {
-  "name": "GNDEC Compass",
+  "id": "/",
+  "name": "GNDEC Compass 2.0",
   "short_name": "Compass",
-  "description": "Your GNDEC campus, in view.",
+  "description": "An installable, offline-ready campus companion for GNDEC Ludhiana: timetable, free rooms, Rasta Saathi map, students, faculty, notices, syllabus and previous-year papers.",
+  "lang": "en-IN",
+  "dir": "ltr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f7f8f5",
-  "theme_color": "#174c3d",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#f3eee2",
+  "theme_color": "#14483a",
   "orientation": "any",
-  "icons": [{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+  "categories": ["education", "navigation", "productivity"],
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Today & next class",
+      "short_name": "Today",
+      "url": "/today",
+      "description": "Your current and upcoming classes"
+    },
+    {
+      "name": "Timetable & free rooms",
+      "short_name": "Timetable",
+      "url": "/timetable",
+      "description": "Section timetable and free-room finder"
+    },
+    {
+      "name": "Rasta Saathi map",
+      "short_name": "Map",
+      "url": "/map",
+      "description": "Campus places and walking routes"
+    },
+    {
+      "name": "Ask Compass",
+      "short_name": "Ask",
+      "url": "/ask",
+      "description": "Ask about classes, rooms, people and papers"
+    }
+  ]
 }

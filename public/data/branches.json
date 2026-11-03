@@ -1,0 +1,126 @@
+{
+ "count": 13,
+ "branches": [
+  {
+   "code": "CE",
+   "name": "Civil Engineering",
+   "program": "B.Tech",
+   "aliases": [
+    "civil",
+    "ce"
+   ]
+  },
+  {
+   "code": "CS",
+   "name": "Computer Science & Engineering",
+   "program": "B.Tech",
+   "aliases": [
+    "cse",
+    "cs",
+    "computer science",
+    "computers"
+   ]
+  },
+  {
+   "code": "EC",
+   "name": "Electronics & Communication Engineering",
+   "program": "B.Tech",
+   "aliases": [
+    "ece",
+    "ec",
+    "electronics",
+    "electronics and communication"
+   ]
+  },
+  {
+   "code": "EE",
+   "name": "Electrical Engineering",
+   "program": "B.Tech",
+   "aliases": [
+    "ee",
+    "electrical"
+   ]
+  },
+  {
+   "code": "IT",
+   "name": "Information Technology",
+   "program": "B.Tech",
+   "aliases": [
+    "it",
+    "information technology"
+   ]
+  },
+  {
+   "code": "ME",
+   "name": "Mechanical Engineering",
+   "program": "B.Tech",
+   "aliases": [
+    "me",
+    "mechanical"
+   ]
+  },
+  {
+   "code": "RAI",
+   "name": "Robotics & Artificial Intelligence",
+   "program": "B.Tech",
+   "aliases": [
+    "rai",
+    "robotics",
+    "artificial intelligence",
+    "ai"
+   ]
+  },
+  {
+   "code": "ARCH",
+   "name": "School of Architecture",
+   "program": "B.Arch",
+   "aliases": [
+    "architecture",
+    "barch"
+   ]
+  },
+  {
+   "code": "BVOC",
+   "name": "B.Voc",
+   "program": "B.Voc",
+   "aliases": [
+    "b voc",
+    "bvoc"
+   ]
+  },
+  {
+   "code": "BCA",
+   "name": "BCA",
+   "program": "BCA",
+   "aliases": [
+    "bca"
+   ]
+  },
+  {
+   "code": "MCA",
+   "name": "MCA",
+   "program": "MCA",
+   "aliases": [
+    "mca"
+   ]
+  },
+  {
+   "code": "BCOM",
+   "name": "B.Com",
+   "program": "B.Com",
+   "aliases": [
+    "bcom",
+    "commerce"
+   ]
+  },
+  {
+   "code": "BBA",
+   "name": "BBA",
+   "program": "BBA",
+   "aliases": [
+    "bba",
+    "business administration"
+   ]
+  }
+ ]
+}
