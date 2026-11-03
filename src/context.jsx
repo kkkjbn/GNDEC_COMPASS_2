@@ -5,16 +5,22 @@ import { buildSearchIndex } from './lib/search.js';
 const DATA_FILES = [
   'campus',
   'timetable',
+  'room-timetable',
   'notices',
   'papers',
   'syllabus',
   'rooms',
   'sources',
+  'status',
   'students',
   'faculty',
   'contacts',
   'branches',
 ];
+
+const DATA_KEYS = {
+  'room-timetable': 'roomTimetable',
+};
 
 const AppContext = createContext(null);
 const OFFLINE_CACHE = 'compass-offline-media-v2';
@@ -23,6 +29,12 @@ const defaultProfile = {
   name: '',
   crn: '',
   sectionId: 'ECB',
+  subsection: '',
+  academicGroup: '',
+  mentor: '',
+  mentorPhone: '',
+  mentorVenue: '',
+  venue: '',
   branch: 'EC',
   year: 1,
 };
@@ -86,7 +98,7 @@ export function AppProvider({ children }) {
     setLoadError(null);
     try {
       const entries = await Promise.all(DATA_FILES.map(async (name) => [name, await fetchJson(name)]));
-      setRawData(Object.fromEntries(entries));
+      setRawData(Object.fromEntries(entries.map(([name, value]) => [DATA_KEYS[name] || name, value])));
     } catch (error) {
       setLoadError(error.message || 'Could not load campus data');
     } finally {

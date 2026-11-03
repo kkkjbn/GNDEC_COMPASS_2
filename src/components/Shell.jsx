@@ -190,7 +190,7 @@ function Topbar({ onSearch, onProfile, onMore }) {
       <div className="topbar-actions">
         <span className={`connection ${online ? 'online' : 'offline'}`} title={online ? 'Online' : 'Offline — cached data is active'}>
           {online ? <Wifi size={14} /> : <WifiOff size={14} />}
-          <span>{online ? 'Live' : 'Offline'}</span>
+          <span>{online ? 'Online' : 'Offline'}</span>
         </span>
         {installPrompt && (
           <button

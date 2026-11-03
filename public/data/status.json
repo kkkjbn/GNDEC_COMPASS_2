@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-03T16:19:47.336Z",
+  "lastCheckedAt": "2026-11-03T16:19:47.336Z",
+  "sourceVersion": "17-09-2026",
+  "sourceVersionKey": "2026-09-17",
+  "refresh": {
+    "mode": "scheduled",
+    "intervalHours": 4,
+    "note": "A scheduled GitHub Action re-reads the official APPSC timetable index and rebuilds the published JSON. The browser does not poll the college site.",
+    "lastCheckedAt": "2026-11-03T16:19:47.336Z",
+    "nextCheckAt": "2026-11-03T20:19:47.336Z"
+  },
+  "counts": {
+    "rooms": 99,
+    "roomsPublished": 100,
+    "occupiedSlots": 824,
+    "sections": 54,
+    "yearsPublished": [
+      1,
+      2,
+      3
+    ],
+    "yearsMissing": [
+      4
+    ]
+  }
+}

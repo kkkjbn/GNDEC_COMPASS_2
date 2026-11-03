@@ -46,6 +46,10 @@ const cases = [
   ['what is 18% of 450', 'math', /81/],
   ['where is the library', 'route', /Central Library/],
   ['where is the canteen near ECB', 'route', /Day Scholar Canteen/],
+  ['what is EDG', 'glossary', /Engineering Drawing and Graphics/],
+  ['PPS full form', 'glossary', /Programming for Problem Solving/],
+  ['who teaches EDG', 'subject-teacher', /Engineering Drawing and Graphics/],
+  ['EDG timetable', 'timetable', /Engineering Drawing and Graphics/],
 ];
 
 for (const [query, intent, pattern] of cases) {
@@ -55,3 +59,21 @@ for (const [query, intent, pattern] of cases) {
     assert.match(answer.text, pattern);
   });
 }
+
+test('assistant personalizes a first-year timetable with the mentoring group', () => {
+  const studentProfile = {
+    name: 'Kaushik Jain',
+    crn: '2617070',
+    sectionId: 'ECB',
+    subsection: 'ECB1',
+    academicGroup: 'ECBM1',
+    mentor: 'Dr. Chahat Jain',
+    mentorPhone: '7837005620',
+    mentorVenue: 'G6',
+  };
+  const answer = answerQuestion('Monday timetable', { data, profile: studentProfile, memory: {}, now });
+  assert.equal(answer.intent, 'timetable');
+  assert.match(answer.text, /ECBM1/);
+  assert.match(answer.text, /Dr\. Chahat Jain/);
+  assert.match(answer.text, /G6/);
+});

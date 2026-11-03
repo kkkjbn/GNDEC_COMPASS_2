@@ -50,16 +50,20 @@ const FAQ = [
     a: 'The current official FET export only publishes complete section schedules for first year. Some higher-year groups appear partially or not at all. We label this clearly instead of inventing missing classes.',
   },
   {
+    q: 'Does Compass update itself live?',
+    a: 'No. Compass ships a published snapshot of the official FET export. A scheduled check can rebuild the data when a newer official export appears, but opening the app does not poll the college site, and room or teacher changes made after the export date are not reflected automatically. The build date and source are shown with the data.',
+  },
+  {
     q: 'Can Compass tell me my attendance, fees or results?',
     a: 'No. Those are private ERP records and are not part of the public data used here. Compass links to official systems but does not log in or store your credentials.',
   },
   {
     q: 'Where do the photos and map come from?',
-    a: 'Photos come from the public GNDEC gallery, the official room gallery and one credited Wikimedia Commons image. Map positions come from OpenStreetMap building footprints and the shared GNDEC/GND Polytechnic campus map. Walking times are estimates.',
+    a: 'Photos come from the public GNDEC gallery, the official room gallery and one credited Wikimedia Commons image. Map positions are an illustrated campus plan maintained inside Compass. Walking times are estimates.',
   },
   {
     q: 'Does it work without internet?',
-    a: 'Yes, after the first visit. The app shell, campus data and map geometry are cached. You can also download the campus photo pack in Settings. External PDFs, Google Maps and live tiles still need a connection.',
+    a: 'Yes, after the first visit. The app shell, campus data and map geometry are cached. You can also download the campus photo pack in Settings. External PDFs and external photos still need a connection.',
   },
 ];
 
@@ -254,7 +258,7 @@ export default function About() {
 
       <p className="about-disclaimer">
         GNDEC Compass is an independent student project and is not affiliated with Guru Nanak Dev Engineering College. Names, timetables and college information
-        belong to their respective owners. Map data © OpenStreetMap contributors. Photos credited individually in the gallery.
+        belong to their respective owners. Map geometry is an illustrated campus plan drawn for Compass. Photos credited individually in the gallery.
       </p>
     </div>
   );

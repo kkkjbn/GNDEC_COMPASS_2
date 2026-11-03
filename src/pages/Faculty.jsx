@@ -144,9 +144,9 @@ export default function Faculty() {
         description="Public GNDEC faculty profiles, linked to the classes they teach in the current timetable export. Office rooms are not published here unless verified."
         actions={
           <div className="head-actions">
-            <Link to="/faculty?dept=Computer%20Science%20%26%20Engg." className="btn secondary">
-              CSE department
-            </Link>
+            <button type="button" className="btn secondary" onClick={() => setDepartmentValue('ALL')}>
+              All departments
+            </button>
             <Link to="/ask?q=Who%20teaches%20Math%20I%3F" className="btn primary">
               Who teaches a subject?
             </Link>
@@ -170,6 +170,28 @@ export default function Faculty() {
         <p>
           Profiles: gndec.ac.in faculty pages, checked {data.faculty?.checkedAt ? new Date(data.faculty.checkedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Sep 2026'}.
         </p>
+      </div>
+
+      <div className="department-chips" role="list" aria-label="All departments">
+        <button
+          type="button"
+          role="listitem"
+          className={`department-chip ${department === 'ALL' ? 'active' : ''}`}
+          onClick={() => setDepartmentValue('ALL')}
+        >
+          All departments <em>{faculty.length}</em>
+        </button>
+        {departments.map(([name, people]) => (
+          <button
+            type="button"
+            role="listitem"
+            key={name}
+            className={`department-chip ${department === name ? 'active' : ''}`}
+            onClick={() => setDepartmentValue(name)}
+          >
+            {DEPT_ALIASES[name] || name} <em>{people.length}</em>
+          </button>
+        ))}
       </div>
 
       {roles.length > 0 && (

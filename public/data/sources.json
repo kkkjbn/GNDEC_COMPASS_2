@@ -1,36 +1,38 @@
 {
-  "generatedAt": "2026-11-02T11:39:01.209Z",
+  "generatedAt": "2026-11-03T16:19:47.336Z",
   "sources": [
     {
       "label": "Section-wise timetable (FET)",
       "url": "https://appsc.gndec.ac.in/sites/default/files/2026-09/17_09_2026_groups_days_horizontal.html",
       "kind": "timetable",
-      "fetchedAt": "2026-11-02T11:38:45.765Z",
-      "contentHash": "1d73dcfbd3a2fe0f"
+      "fetchedAt": "2026-11-03T16:19:47.336Z",
+      "contentHash": "64c1a067"
     },
     {
       "label": "Sub-section-wise timetable (FET)",
       "url": "https://appsc.gndec.ac.in/sites/default/files/2026-09/17_09_2026_subgroups_days_horizontal.html",
       "kind": "timetable",
-      "fetchedAt": "2026-11-02T11:38:45.766Z"
+      "fetchedAt": "2026-11-03T16:19:47.336Z",
+      "contentHash": "b6e86069"
     },
     {
-      "label": "Faculty timetable (FET)",
+      "label": "Teachers timetable (FET)",
       "url": "https://appsc.gndec.ac.in/sites/default/files/2026-09/17_09_2026_teachers_days_horizontal.html",
       "kind": "timetable",
-      "fetchedAt": "2026-11-02T11:38:45.766Z"
+      "fetchedAt": "2026-11-03T16:19:47.336Z"
     },
     {
       "label": "Room timetable (FET)",
       "url": "https://appsc.gndec.ac.in/sites/default/files/2026-09/17_09_2026_rooms_days_horizontal.html",
       "kind": "timetable",
-      "fetchedAt": "2026-11-02T11:38:45.766Z"
+      "fetchedAt": "2026-11-03T16:19:47.336Z",
+      "contentHash": "80672c6a"
     },
     {
       "label": "Timetable index (APPSC)",
       "url": "https://appsc.gndec.ac.in/time_tables",
       "kind": "index",
-      "fetchedAt": "2026-11-02T11:38:45.766Z"
+      "fetchedAt": "2026-11-03T16:19:47.336Z"
     },
     {
       "label": "Faculty directory — Applied Science",
@@ -198,7 +200,32 @@
       "url": "https://it.gndec.ac.in/?q=sqb",
       "kind": "notes",
       "fetchedAt": "2026-11-02T11:39:01.085Z"
+    },
+    {
+      "label": "Central Library hours",
+      "url": "https://gndec.ac.in/library/",
+      "kind": "campus",
+      "fetchedAt": "2026-11-03T16:19:47.336Z"
+    },
+    {
+      "label": "Subjects timetable (FET)",
+      "url": "https://appsc.gndec.ac.in/sites/default/files/2026-09/17_09_2026_subjects_days_horizontal.html",
+      "kind": "timetable",
+      "fetchedAt": "2026-11-03T16:19:47.336Z"
+    },
+    {
+      "label": "Years timetable (FET)",
+      "url": "https://appsc.gndec.ac.in/sites/default/files/2026-09/17_09_2026_years_days_horizontal.html",
+      "kind": "timetable",
+      "fetchedAt": "2026-11-03T16:19:47.336Z"
     }
   ],
-  "rosterFiles": []
+  "rosterFiles": [],
+  "refresh": {
+    "mode": "scheduled",
+    "intervalHours": 4,
+    "note": "A scheduled GitHub Action re-reads the official APPSC timetable index and rebuilds the published JSON. The browser does not poll the college site.",
+    "lastCheckedAt": "2026-11-03T16:19:47.336Z",
+    "nextCheckAt": "2026-11-03T20:19:47.336Z"
+  }
 }

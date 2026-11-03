@@ -51,3 +51,10 @@ test('source registry has official college references', () => {
   const registry = read('sources');
   assert.ok(registry.sources.some(source => source.url?.includes('gndec.ac.in')));
 });
+
+test('faculty directory exposes all published departments', () => {
+  const faculty = read('faculty');
+  const departments = new Set(faculty.records.map(person => person.department).filter(Boolean));
+  assert.ok(departments.size >= 10, `expected at least 10 departments, found ${departments.size}`);
+  assert.ok(departments.has('Computer Science & Engg.'));
+});

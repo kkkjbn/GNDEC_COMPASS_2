@@ -21,7 +21,7 @@ import {
 import { Link, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
 import { DAYS, DAYS_SHORT, branchShort, formatClock, greeting, longDate, dayIndexFor, dateKey } from '../lib/utils.js';
-import { findCurrentAndNext, findSection, lecturesOn, nextClassTodayOrLater } from '../lib/timetable.js';
+import { findCurrentAndNext, findSection, isMentoringLecture, lecturesOn, nextClassTodayOrLater, personalizeSection } from '../lib/timetable.js';
 import { findRoute } from '../lib/campus.js';
 import { Badge, DataFoot, Metric, PageHeader, Panel, PanelHead, RichText } from '../components/ui.jsx';
 import { useShell } from '../components/Shell.jsx';
@@ -87,6 +87,7 @@ function NextClassCard({ section, now, compact = false }) {
       {!compact && (
         <p className="next-teacher">
           {lecture.teacher || lecture.teachers?.join(', ') || 'Faculty not listed'} · {section.id}
+          {section.academicGroup ? ` · ${section.academicGroup}` : ''}
         </p>
       )}
       <div className="next-actions">
@@ -115,7 +116,10 @@ export default function Today() {
     return () => clearInterval(timer);
   }, []);
 
-  const section = findSection(data?.timetable, profile.sectionId);
+  const section = useMemo(
+    () => personalizeSection(data?.timetable, profile) || findSection(data?.timetable, profile.sectionId),
+    [data, profile],
+  );
   const timetable = data?.timetable;
   const campus = data?.campus;
   const lectures = useMemo(() => (day >= 0 ? lecturesOn(section, day) : []), [section, day]);
@@ -177,7 +181,7 @@ export default function Today() {
           <div className="hero-meta">
             <span>
               <span className={`status-dot ${online ? 'online' : 'offline'}`} />
-              {online ? 'Live campus data' : 'Working offline'}
+              {online ? 'Published campus data' : 'Working offline'}
             </span>
             <span>·</span>
             <span>{stats.length} sections indexed</span>
@@ -217,7 +221,7 @@ export default function Today() {
           <PanelHead
             eyebrow="YOUR DAY"
             title={chosenDay === dayIndexFor(now) ? 'Today’s classes' : `${DAYS[chosenDay]}’s classes`}
-            description={section ? `${section.label} · ${lectures.length} ${lectures.length === 1 ? 'class' : 'classes'} listed` : 'Choose a section to see your classes'}
+            description={section ? `${section.label}${section.academicGroup ? ` · ${section.academicGroup}` : ''} · ${lectures.length} ${lectures.length === 1 ? 'class' : 'classes'} listed` : 'Choose a section to see your classes'}
             action={
               <Link to="/timetable" className="subtle-link">
                 Full week <ArrowRight size={14} />
@@ -262,6 +266,7 @@ export default function Today() {
                     <div className="timeline-copy">
                       <div className="timeline-title">
                         <b>{lecture.subject}</b>
+                        {isMentoringLecture(lecture) && <Badge tone="gold">Mentoring</Badge>}
                         {isCurrent && <Badge tone="green">Now</Badge>}
                       </div>
                       <p>

@@ -116,7 +116,7 @@ export default function Students() {
       <PageHeader
         eyebrow="PEOPLE ON CAMPUS"
         title="Student directory"
-        description="The public first-year permanent-section roster, searchable by CRN, name, branch, section or mentor. Contact numbers stay private."
+        description="The public first-year permanent-section roster, searchable by CRN, name, branch, section, mentor or academic group. Mentor contact details are the ones the public roster lists."
         actions={
           <div className="head-actions">
             {profile.crn && (
@@ -247,7 +247,7 @@ export default function Students() {
           </EmptyState>
         )}
         <DataFoot>
-          Public roster only — mentor phone numbers and personal contact details are deliberately omitted. This is not an attendance or result system.
+          Public roster only — mentor name, phone and venue are the fields published in that roster. This is not an attendance or result system.
         </DataFoot>
       </Panel>
 
@@ -324,6 +324,12 @@ function StudentModal({ student, onClose }) {
             <dt>Mentor venue</dt>
             <dd>{student.mentorVenue || 'Not listed'}</dd>
           </div>
+          {student.mentorPhone && (
+            <div>
+              <dt>Mentor phone</dt>
+              <dd><a href={`tel:${student.mentorPhone}`}>{student.mentorPhone}</a></dd>
+            </div>
+          )}
         </dl>
 
         <div className="mentor-card">
@@ -333,7 +339,10 @@ function StudentModal({ student, onClose }) {
           <div>
             <span className="eyebrow">MENTOR</span>
             <b>{student.mentor || 'Not listed'}</b>
-            <small>{student.mentorVenue ? `Usually available at ${student.mentorVenue}` : 'Venue not listed in the roster.'}</small>
+            <small>
+              {student.mentorVenue ? `Usually available at ${student.mentorVenue}` : 'Venue not listed in the roster.'}
+              {student.mentorPhone ? ` · ${student.mentorPhone}` : ''}
+            </small>
           </div>
           {room && (
             <Link to={`/map?room=${encodeURIComponent(room.code)}`} className="btn ghost small" onClick={onClose}>
@@ -351,8 +360,8 @@ function StudentModal({ student, onClose }) {
           </button>
         </div>
 
-        <InlineNotice tone="info" title="Privacy by design">
-          The public roster includes names and academic groupings only. Mentor phone numbers and personal contacts are not shown or searchable here.
+        <InlineNotice tone="info" title="Public roster data">
+          Names, academic groups and mentor contact fields come from the public roster. Private student contact details are not shown or searchable here.
         </InlineNotice>
       </div>
     </Modal>

@@ -5,24 +5,20 @@ import {
   Camera,
   Check,
   ChevronDown,
-  Compass,
-  ExternalLink,
   Footprints,
   Info,
-  LocateFixed,
   MapPin,
   Maximize2,
   Minus,
   Navigation,
   Plus,
   Route,
-  Search,
   ShieldCheck,
   X,
 } from 'lucide-react';
 import { Link, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
-import { categoryMeta, distanceMeters, findRoute, nearestPlace, placePhoto, walkMinutes, CATEGORY_META } from '../lib/campus.js';
+import { categoryMeta, distanceMeters, findRoute, placePhoto, walkMinutes, CATEGORY_META } from '../lib/campus.js';
 import { norm, photoPath } from '../lib/utils.js';
 import {
   Badge,
@@ -49,7 +45,7 @@ function toPoints(route) {
 }
 
 export default function MapPage() {
-  const { data, profile, online, toast } = useApp();
+  const { data, online } = useApp();
   const { searchParams, navigate } = useRouter();
   const campus = data?.campus;
   const places = campus?.places || [];
@@ -62,7 +58,6 @@ export default function MapPage() {
   const [placeQuery, setPlaceQuery] = useState('');
   const [panelTab, setPanelTab] = useState(searchParams.get('tab') === 'gallery' ? 'photos' : 'directions');
   const [lightbox, setLightbox] = useState(null);
-  const [locating, setLocating] = useState(false);
   const svgRef = useRef(null);
 
   const roomQuery = searchParams.get('room') || '';
@@ -140,33 +135,6 @@ export default function MapPage() {
     setRouteParam('to', from);
   };
 
-  const locate = () => {
-    if (!navigator.geolocation) {
-      toast('Geolocation is not available in this browser.', 'error');
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const point = { lat: position.coords.latitude, lon: position.coords.longitude };
-        const nearest = nearestPlace(campus, point);
-        setLocating(false);
-        if (nearest) {
-          setFrom(nearest.id);
-          setRouteParam('from', nearest.id);
-          toast(`Using ${nearest.name} as your starting point.`, 'success');
-        } else {
-          toast('Could not match your location to a campus place.', 'error');
-        }
-      },
-      () => {
-        setLocating(false);
-        toast('Location permission was denied. Choose a starting point instead.', 'error');
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
-    );
-  };
-
   const zoom = (delta) => {
     setView((current) => ({
       ...current,
@@ -214,22 +182,12 @@ export default function MapPage() {
       <PageHeader
         eyebrow="RASTA SAATHI · CAMPUS NAVIGATION"
         title="Find your way around campus"
-        description="Real campus geometry, 45 places, estimated walking routes and photo landmarks. Indoor door-level routes are not verified yet."
-        actions={
-          <div className="head-actions">
-            <button type="button" className="btn secondary" onClick={locate}>
-              <LocateFixed size={16} /> {locating ? 'Locating…' : 'Use my location'}
-            </button>
-            <a className="btn primary" href={destination ? `https://www.google.com/maps/dir/?api=1&destination=${destination.lat},${destination.lon}` : 'https://www.google.com/maps/dir/?api=1&destination=30.8598,75.8637'} target="_blank" rel="noreferrer">
-              Google Maps <ExternalLink size={15} />
-            </a>
-          </div>
-        }
+        description={`Illustrated campus geometry, ${places.length} places, estimated walking routes and photo landmarks. Indoor door-level routes are not verified yet.`}
       />
 
       {!online && (
         <InlineNotice tone="warn" title="Offline map mode">
-          The illustrated campus map still works offline. Live tiles, Google Maps and external photos need a connection.
+          The illustrated campus map still works offline. External photos need a connection.
         </InlineNotice>
       )}
 
@@ -405,7 +363,7 @@ export default function MapPage() {
               <span><i style={{ background: '#0f6b4f' }} /> Destination</span>
               <span><i style={{ background: '#c97a45' }} /> Start</span>
               <span><i style={{ background: '#4766c7' }} /> Campus place</span>
-              <span className="map-legend-osm">Base geometry © OpenStreetMap contributors</span>
+              <span className="map-legend-osm">Illustrated campus plan · not to scale</span>
             </div>
 
             <div className="map-category-bar">
@@ -500,7 +458,7 @@ export default function MapPage() {
                   <div className="destination-copy">
                     <span className="eyebrow">{categoryMeta(destination.category).label.toUpperCase()}</span>
                     <h3>{destination.name}</h3>
-                    <p>{destination.description || 'A campus place from the shared GNDEC / GND Polytechnic map.'}</p>
+                    <p>{destination.description || 'A campus place from the Compass place list.'}</p>
                     {destination.floor && <small>Floor: {destination.floor}</small>}
                   </div>
                 </div>
@@ -624,12 +582,9 @@ export default function MapPage() {
           )}
 
           <div className="map-side-links">
-            <a href="https://www.openstreetmap.org/way/38152756" target="_blank" rel="noreferrer">
-              <MapPin size={14} /> OpenStreetMap campus <ExternalLink size={12} />
-            </a>
-            <a href="https://www.gndpoly.org/CollegeMap2.php" target="_blank" rel="noreferrer">
-              <Compass size={14} /> Shared campus map <ExternalLink size={12} />
-            </a>
+            <button type="button" className="text-button" onClick={() => setPanelTab('photos')}>
+              <Camera size={14} /> Campus photo gallery
+            </button>
           </div>
         </aside>
       </div>

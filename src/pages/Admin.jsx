@@ -280,7 +280,7 @@ function AdminStudio({ data, reload, online, overrides, setOverrides, toast, pre
         label: 'Mapped places without a photo',
         count: noPhoto,
         status: noPhoto === 0 ? 'good' : 'warn',
-        detail: `${places.length} places · ${data.campus?.geometry?.length || 0} OSM shapes · ${data.campus?.edges?.length || 0} walking edges`,
+        detail: `${places.length} places · ${data.campus?.geometry?.length || 0} campus shapes · ${data.campus?.edges?.length || 0} walking edges`,
       },
       {
         label: 'Notices without a date',

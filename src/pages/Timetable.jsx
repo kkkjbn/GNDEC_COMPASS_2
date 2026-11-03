@@ -25,12 +25,18 @@ import {
   yearLabel,
 } from '../lib/utils.js';
 import {
+  baseSectionFor,
   compareSections,
   findSection,
   freeClassrooms,
+  isMentoringLecture,
   lecturesOn,
   periodForMinutes,
-  roomSchedule,
+  personalizationContext,
+  personalizeSection,
+  roomBlocks,
+  roomKindLabel,
+  roomScheduleFromData,
   sectionCoverage,
   teacherSchedule,
   timetableEntries,
@@ -213,6 +219,8 @@ function LectureModal({ lecture, onClose }) {
         <div className="lecture-detail-tags">
           {kind && <Badge tone="gold">{kind}</Badge>}
           {lecture.sectionId && <Badge tone="green">{lecture.sectionId}</Badge>}
+          {isMentoringLecture(lecture) && <Badge tone="gold">Mentoring</Badge>}
+          {lecture.mentoringGroup && <Badge tone="neutral">{lecture.mentoringGroup}</Badge>}
           <Badge tone="neutral">Period {lecture.period + 1}</Badge>
         </div>
         <dl>
@@ -232,6 +240,12 @@ function LectureModal({ lecture, onClose }) {
             <dt>Sub-section</dt>
             <dd>{lecture.subsection || 'All students'}</dd>
           </div>
+          {lecture.mentoringGroup && (
+            <div>
+              <dt>Mentoring group</dt>
+              <dd>{lecture.mentoringGroup}</dd>
+            </div>
+          )}
         </dl>
         <InlineNotice tone="info">
           This comes from the official FET export dated 17 Sep 2026. Room changes and makeup classes are not reflected automatically.
@@ -269,6 +283,13 @@ export default function Timetable() {
   const tab = tabParam || (teacherQuery ? 'teacher' : roomQueryParam ? 'room' : 'day');
   const selectedSectionId = searchParams.get('section') || profile.sectionId || 'ECB';
   const section = findSection(timetable, selectedSectionId);
+  const personalization = useMemo(() => personalizationContext(timetable, profile), [timetable, profile]);
+  const profileApplies =
+    Boolean(section && personalization) && baseSectionFor(timetable, section)?.id === personalization.base.id;
+  const activeSection = useMemo(
+    () => (profileApplies ? personalizeSection(timetable, profile) || section : section),
+    [profileApplies, timetable, profile, section],
+  );
   const [day, setDay] = useState(() => Math.max(0, dayIndexFor(new Date())));
   const teacher = teacherQuery ? teacherQuery : '';
 
@@ -283,12 +304,12 @@ export default function Timetable() {
 
   const teacherLectures = useMemo(() => (teacher ? teacherSchedule(timetable, teacher) : []), [timetable, teacher]);
   const roomInfo = useMemo(() => (data?.rooms?.rooms || []).find((item) => norm(item.code) === norm(roomQueryParam) || norm(item.id) === norm(roomQueryParam)), [data, roomQueryParam]);
-  const roomLectures = useMemo(() => (roomQueryParam ? roomSchedule(timetable, roomInfo?.code || roomQueryParam) : []), [timetable, roomInfo, roomQueryParam]);
+  const roomLectures = useMemo(() => (roomQueryParam ? roomScheduleFromData(data, roomInfo?.code || roomQueryParam) : []), [data, roomInfo, roomQueryParam]);
 
-  const lectures = useMemo(() => (section ? section.lectures || [] : []), [section]);
-  const dayLectures = useMemo(() => (day >= 0 ? lecturesOn(section, day) : []), [section, day]);
+  const lectures = useMemo(() => (activeSection ? activeSection.lectures || [] : []), [activeSection]);
+  const dayLectures = useMemo(() => (day >= 0 ? lecturesOn(activeSection, day) : []), [activeSection, day]);
   const weekCount = lectures.length;
-  const coverage = sectionCoverage(section);
+  const coverage = sectionCoverage(activeSection);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const currentPeriod = periodForMinutes(timetable, nowMinutes);
   const today = dayIndexFor(now);
@@ -296,9 +317,13 @@ export default function Timetable() {
   const freePeriod = tab === 'free' ? Number(searchParams.get('period') ?? Math.max(0, currentPeriod)) : Math.max(0, currentPeriod);
   const freeDay = tab === 'free' ? Number(searchParams.get('day') ?? Math.max(0, today)) : Math.max(0, today);
   const free = useMemo(
-    () => freeClassrooms(timetable, data?.rooms?.rooms, freeDay, Math.min(7, Math.max(0, freePeriod))),
-    [timetable, data, freeDay, freePeriod],
+    () => freeClassrooms(data, freeDay, Math.min(7, Math.max(0, freePeriod))),
+    [data, freeDay, freePeriod],
   );
+  const blocks = useMemo(() => roomBlocks(data), [data]);
+  useEffect(() => {
+    if (blockFilter !== 'all' && !blocks.some((block) => block.value === blockFilter)) setBlockFilter('all');
+  }, [blockFilter, blocks]);
   const freeByBlock = useMemo(() => {
     const filtered = free.filter((room) => blockFilter === 'all' || room.block === blockFilter);
     const groups = new Map();
@@ -356,6 +381,28 @@ export default function Timetable() {
         }
       />
 
+      {activeSection?.personalized && (activeSection.cohortId || activeSection.academicGroup || activeSection.mentor) && (
+        <div className="mode-banner mentoring-banner">
+          <span className="mode-icon">
+            <Users size={18} />
+          </span>
+          <div>
+            <b>
+              Personalized for {[profile.branch, profile.section, profile.subsection].filter(Boolean).join(' / ') || activeSection.id}
+              {activeSection.academicGroup ? ` · Academic group ${activeSection.academicGroup}` : ''}
+            </b>
+            <small>
+              {activeSection.mentoringEntryId
+                ? `Mentoring group ${activeSection.mentoringGroup || activeSection.academicGroup} merged into the section timetable.`
+                : 'Your lab batch is applied to practicals.'}
+              {activeSection.mentor ? ` Mentor: ${activeSection.mentor}.` : ''}
+              {activeSection.mentorVenue ? ` Venue: ${activeSection.mentorVenue}.` : ''}
+            </small>
+          </div>
+          {activeSection.cohortId && <Badge tone="green">{activeSection.cohortId}</Badge>}
+        </div>
+      )}
+
       {teacher && (
         <div className="mode-banner">
           <span className="mode-icon">
@@ -394,17 +441,18 @@ export default function Timetable() {
             value={tab}
             onChange={(value) => setParam({ tab: value })}
           />
-          {section && (
+          {activeSection && (
             <div className="section-summary">
-              <span className="section-code">{section.id}</span>
+              <span className="section-code">{activeSection.cohortId || activeSection.id}</span>
               <div>
-                <b>{section.label}</b>
+                <b>{activeSection.label}</b>
                 <small>
-                  {weekCount} classes/week · {branchShort(section.branch)} · {yearLabel(section.year)}
+                  {weekCount} classes/week · {branchShort(activeSection.branch)} · {yearLabel(activeSection.year)}
+                  {activeSection.academicGroup ? ` · ${activeSection.academicGroup}` : ''}
                 </small>
               </div>
-              <Badge tone={section.year === 1 ? 'green' : 'gold'}>
-                {section.year === 1 ? 'Published export' : coverage.percent > 40 ? 'Mostly covered' : 'Partial export'}
+              <Badge tone={activeSection.year === 1 ? 'green' : 'gold'}>
+                {activeSection.year === 1 ? 'Published export' : coverage.percent > 40 ? 'Mostly covered' : 'Partial export'}
               </Badge>
             </div>
           )}
@@ -423,13 +471,13 @@ export default function Timetable() {
             </div>
             <div className="day-summary-row">
               <div>
-                <h2>{DAYS[day]} · {section?.label || 'No section'}</h2>
+                <h2>{DAYS[day]} · {activeSection?.label || 'No section'}</h2>
                 <p>
                   {dayLectures.length} classes · {8 - dayLectures.length} free periods
                   {today === day ? ` · period ${currentPeriod + 1} now` : ''}
                 </p>
               </div>
-              <Link to={`/timetable?section=${section?.id || ''}&tab=week`} className="btn subtle">
+              <Link to={`/timetable?section=${activeSection?.id || ''}&tab=week`} className="btn subtle">
                 See full week <ArrowRight size={15} />
               </Link>
             </div>
@@ -482,7 +530,7 @@ export default function Timetable() {
           <div className="tab-pane">
             <div className="week-toolbar">
               <div>
-                <h2>{section?.label || 'Weekly timetable'}</h2>
+                <h2>{activeSection?.label || 'Weekly timetable'}</h2>
                 <p>{weekCount} classes in the published export. Tap any class for room and faculty details.</p>
               </div>
               <span className="week-hint">
@@ -498,8 +546,8 @@ export default function Timetable() {
           <div className="tab-pane">
             <div className="free-toolbar">
               <div>
-                <h2>Free classrooms</h2>
-                <p>Rooms with no scheduled class in the official export for the chosen period.</p>
+                <h2>Free rooms & study spaces</h2>
+                <p>Every published 1st, 2nd and 3rd-year section, lab, workshop and seminar hall in the official room timetable.</p>
               </div>
               <div className="free-filters">
                 <Select
@@ -521,21 +569,26 @@ export default function Timetable() {
                   label="Block"
                   value={blockFilter}
                   onChange={setBlockFilter}
-                  options={[
-                    { value: 'all', label: 'All blocks' },
-                    { value: 'F-Block', label: 'F-Block' },
-                    { value: 'G-Block', label: 'G-Block' },
-                    { value: 'S-Block', label: 'S-Block' },
-                  ]}
+                  options={[{ value: 'all', label: 'All blocks' }, ...blocks.map((block) => ({ value: block.value, label: `${block.label} · ${block.count}` }))]}
                 />
               </div>
             </div>
+            <InlineNotice tone="info" title="Coverage from the official room timetable">
+              {data?.roomTimetable?.coverage?.note ||
+                'This check uses every published section, lab, workshop and seminar hall in the official room timetable.'}{' '}
+              Central Library is added separately as an open study space because it is not a scheduled classroom.
+            </InlineNotice>
             <InlineNotice tone="warn" title="A timetable gap is not a booking">
               Rooms can still be used for events, makeup classes, exams or faculty work. Knock before using a room and follow department instructions.
             </InlineNotice>
             <div className="free-count-row">
               <b>{free.length}</b>
-              <span>candidate free rooms · {DAYS[freeDay]}, P{Math.min(7, Math.max(0, freePeriod)) + 1} ({formatClock(PERIOD_STARTS[Math.min(7, Math.max(0, freePeriod))])}–{formatClock(PERIOD_STARTS[Math.min(7, Math.max(0, freePeriod))] + 60)})</span>
+              <span>
+                candidate free rooms & study spaces · {DAYS[freeDay]}, P{Math.min(7, Math.max(0, freePeriod)) + 1} (
+                {formatClock(PERIOD_STARTS[Math.min(7, Math.max(0, freePeriod))])}–
+                {formatClock(PERIOD_STARTS[Math.min(7, Math.max(0, freePeriod))] + 60)})
+                {data?.roomTimetable?.count ? ` · ${data.roomTimetable.count} official rooms checked` : ''}
+              </span>
             </div>
             {freeByBlock.length ? (
               <div className="free-groups">
@@ -552,10 +605,10 @@ export default function Timetable() {
                           <span className="free-room-copy">
                             <b>{room.code}</b>
                             <small>
-                              {room.floor || room.kind || 'Room'} · free in timetable
+                              {room.alwaysFree ? 'Open study space' : `${room.floor || room.roomKind || 'Room'} · free in timetable`}
                             </small>
                           </span>
-                          <ArrowRight size={14} />
+                          {room.alwaysFree ? <Badge tone="green">Open</Badge> : <ArrowRight size={14} />}
                         </Link>
                       ))}
                     </div>
@@ -564,9 +617,13 @@ export default function Timetable() {
               </div>
             ) : (
               <EmptyState icon={DoorOpen} title="No candidate free room in this filter">
-                Try another period or block. Only rooms that appear in the official timetable are listed.
+                Try another period or block. Only rooms that appear in the official room timetable are listed.
               </EmptyState>
             )}
+            <DataFoot>
+              Official room timetable: {data?.roomTimetable?.source?.label || 'FET room export'} ·{' '}
+              {data?.roomTimetable?.count || 0} rooms checked. The browser shows a published snapshot; it does not poll the college site.
+            </DataFoot>
           </div>
         )}
 
@@ -587,7 +644,7 @@ export default function Timetable() {
               </div>
             </div>
             <div className="room-search-box">
-              <SearchField value={roomQuery} onChange={setRoomQuery} placeholder="Try F107, S214, G18 or “workshop”…" />
+              <SearchField value={roomQuery} onChange={setRoomQuery} placeholder="Try F107, S214, G18, “comp lab” or “library”…" />
               {searchRoom.length > 0 && (
                 <div className="room-search-results">
                   {searchRoom.map((room) => (
@@ -601,7 +658,7 @@ export default function Timetable() {
                     >
                       <span>
                         <b>{room.code}</b>
-                        <small>{[room.block, room.floor, room.kind].filter(Boolean).join(' · ')}</small>
+                        <small>{[room.block, room.floor, roomKindLabel(room)].filter(Boolean).join(' · ')}</small>
                       </span>
                       <ArrowRight size={14} />
                     </button>
@@ -612,11 +669,11 @@ export default function Timetable() {
             {roomInfo ? (
               <>
                 <div className="room-detail-strip">
-                  {roomInfo.image ? <img src={roomInfo.image} alt={`${roomInfo.code} classroom`} /> : <span className="room-detail-placeholder"><DoorOpen size={26} /></span>}
+                  {roomInfo.image ? <img src={roomInfo.image} alt={`${roomInfo.code} room`} /> : <span className="room-detail-placeholder"><DoorOpen size={26} /></span>}
                   <div>
                     <span className="eyebrow">ROOM PROFILE</span>
                     <h3>{roomInfo.code}</h3>
-                    <p>{[roomInfo.block, roomInfo.floor, roomInfo.kind].filter(Boolean).join(' · ') || 'Block and floor are not verified.'}</p>
+                    <p>{[roomInfo.block, roomInfo.floor, roomKindLabel(roomInfo)].filter(Boolean).join(' · ') || 'Block and floor are not verified.'}</p>
                     <small>{roomInfo.source}</small>
                   </div>
                   <div className="room-detail-actions">
@@ -628,18 +685,22 @@ export default function Timetable() {
                 </div>
                 {roomLectures.length ? (
                   <WeekGrid lectures={roomLectures.map((lecture) => ({ ...lecture, sectionLabel: lecture.sectionLabel }))} onSelect={setSelected} showSection timetable={timetable} />
+                ) : roomInfo.openStudySpace ? (
+                  <InlineNotice tone="info" title="Open study space, not a scheduled classroom">
+                    Central Library is not part of the FET room timetable. Check the official library hours before travelling.
+                  </InlineNotice>
                 ) : (
                   <EmptyState icon={DoorOpen} title="No scheduled classes for this room">
                     It may be a lab, office, exam hall or a room used only for events. Block and floor data may need on-site verification.
                   </EmptyState>
                 )}
-                <DataFoot>Room codes come from the official timetable. Block/floor matches are inferred from code patterns and editable in the admin studio.</DataFoot>
+                <DataFoot>Room schedules come from the official FET room timetable; block/floor labels are inferred from code patterns and editable in the admin studio.</DataFoot>
               </>
             ) : (
               <div className="room-empty">
                 <span className="empty-icon"><DoorOpen size={24} /></span>
                 <b>Choose a room to see its week</b>
-                <p>Room codes such as F107 (F-Block), S214 (S-Block) and G18 (G-Block) come from the official timetable.</p>
+                <p>Room codes such as F107 (F-Block), S214 (S-Block), G18 (G-Block), CSE labs and the Central Library come from the official room data.</p>
               </div>
             )}
           </div>

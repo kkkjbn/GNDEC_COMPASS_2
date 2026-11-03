@@ -1,11 +1,13 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-02T11:39:01.099Z",
+  "generatedAt": "2026-11-03T16:19:47.336Z",
   "source": {
-    "label": "Official FET timetable export — 17 Sep 2026",
+    "label": "Official FET timetable export — 17-09-2026",
     "url": "https://appsc.gndec.ac.in/sites/default/files/2026-09/17_09_2026_groups_days_horizontal.html",
     "index": "https://appsc.gndec.ac.in/time_tables",
-    "version": "17-09-2026"
+    "version": "17-09-2026",
+    "versionKey": "2026-09-17",
+    "contentHash": "64c1a067"
   },
   "days": {
     "0": "Monday",
@@ -12729,11 +12731,9 @@
           "period": 2,
           "start": "10:30",
           "end": "11:30",
-          "subject": "MEA",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -13101,11 +13101,9 @@
           "period": 2,
           "start": "10:30",
           "end": "11:30",
-          "subject": "MEA",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -13337,11 +13335,9 @@
           "period": 1,
           "start": "09:30",
           "end": "10:30",
-          "subject": "MEB",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -13694,11 +13690,9 @@
           "period": 1,
           "start": "09:30",
           "end": "10:30",
-          "subject": "MEB",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -16408,11 +16402,9 @@
           "period": 5,
           "start": "13:30",
           "end": "14:30",
-          "subject": "EEB",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -16779,11 +16771,9 @@
           "period": 5,
           "start": "13:30",
           "end": "14:30",
-          "subject": "EEB",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -16942,11 +16932,9 @@
           "period": 2,
           "start": "10:30",
           "end": "11:30",
-          "subject": "ECA",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -17313,11 +17301,9 @@
           "period": 2,
           "start": "10:30",
           "end": "11:30",
-          "subject": "ECA",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -18273,8 +18259,10 @@
       "branch": "EC",
       "branchName": "Electronics & Communication",
       "program": "B.Tech",
-      "group": "BM",
-      "label": "1st Year · EC · Group BM",
+      "group": "B",
+      "mentoringGroup": "M1",
+      "parentId": "ECB",
+      "label": "1st Year · EC · Group B · Mentoring M1",
       "kind": "subgroup",
       "lectures": [
         {
@@ -18398,11 +18386,9 @@
           "period": 5,
           "start": "13:30",
           "end": "14:30",
-          "subject": "ECBM1, ECBM2",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -18447,8 +18433,10 @@
       "branch": "EC",
       "branchName": "Electronics & Communication",
       "program": "B.Tech",
-      "group": "BM",
-      "label": "1st Year · EC · Group BM",
+      "group": "B",
+      "mentoringGroup": "M2",
+      "parentId": "ECB",
+      "label": "1st Year · EC · Group B · Mentoring M2",
       "kind": "subgroup",
       "lectures": [
         {
@@ -18572,11 +18560,9 @@
           "period": 5,
           "start": "13:30",
           "end": "14:30",
-          "subject": "ECBM1, ECBM2",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -18621,8 +18607,10 @@
       "branch": "EC",
       "branchName": "Electronics & Communication",
       "program": "B.Tech",
-      "group": "BM",
-      "label": "1st Year · EC · Group BM",
+      "group": "B",
+      "mentoringGroup": "M3",
+      "parentId": "ECB",
+      "label": "1st Year · EC · Group B · Mentoring M3",
       "kind": "subgroup",
       "lectures": [
         {
@@ -18888,11 +18876,9 @@
           "period": 2,
           "start": "10:30",
           "end": "11:30",
-          "subject": "RAI",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -19246,11 +19232,9 @@
           "period": 2,
           "start": "10:30",
           "end": "11:30",
-          "subject": "RAI",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -23691,11 +23675,9 @@
           "period": 2,
           "start": "10:30",
           "end": "11:30",
-          "subject": "ITA",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -24029,11 +24011,9 @@
           "period": 2,
           "start": "10:30",
           "end": "11:30",
-          "subject": "ITA",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -24562,11 +24542,9 @@
           "period": 6,
           "start": "14:30",
           "end": "15:30",
-          "subject": "ITB",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -24887,11 +24865,9 @@
           "period": 6,
           "start": "14:30",
           "end": "15:30",
-          "subject": "ITB",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -25199,11 +25175,9 @@
           "period": 6,
           "start": "14:30",
           "end": "15:30",
-          "subject": "ITC",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {
@@ -25537,11 +25511,9 @@
           "period": 6,
           "start": "14:30",
           "end": "15:30",
-          "subject": "ITC",
-          "teacher": "Mentoring Class & Professional Development P",
-          "teachers": [
-            "Mentoring Class & Professional Development P"
-          ],
+          "subject": "MENTORING CLASS & PROFESSIONAL DEVELOPMENT P",
+          "teacher": "",
+          "teachers": [],
           "room": ""
         },
         {

@@ -37,6 +37,303 @@ export const sectionForStudent = (timetable, student) => {
 
 export const isSubgroup = (section) => section?.kind === 'subgroup';
 
+export const MENTORING_SUBJECT_RE = /MENTORING\s+CLASS|PROFESSIONAL\s+DEVELOPMENT/i;
+
+export const isMentoringLecture = (lecture) => MENTORING_SUBJECT_RE.test(String(lecture?.subject || ''));
+
+/** The section a subgroup belongs to (ECB1 → ECB, ECBM1 → ECB). */
+export const baseSectionFor = (timetable, entry) => {
+  if (!entry) return null;
+  if (entry.kind !== 'subgroup') return entry;
+  if (entry.parentId) {
+    const parent = findSection(timetable, entry.parentId);
+    if (parent) return parent;
+  }
+  return (
+    (timetable?.sections || []).find(
+      (section) =>
+        section.year === entry.year &&
+        String(section.branch) === String(entry.branch) &&
+        String(section.group || '') === String(entry.group || ''),
+    ) || null
+  );
+};
+
+export const cohortsForSection = (timetable, section) => {
+  const base = baseSectionFor(timetable, section);
+  if (!base) return [];
+  return subgroupList(timetable)
+    .filter(
+      (group) =>
+        !group.mentoringGroup &&
+        group.id !== base.id &&
+        baseSectionFor(timetable, group)?.id === base.id,
+    )
+    .sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
+};
+
+export const mentoringGroupsForSection = (timetable, section) => {
+  const base = baseSectionFor(timetable, section);
+  if (!base) return [];
+  return subgroupList(timetable)
+    .filter((group) => group.mentoringGroup && (group.parentId === base.id || baseSectionFor(timetable, group)?.id === base.id))
+    .sort((a, b) => String(a.mentoringGroup).localeCompare(String(b.mentoringGroup), undefined, { numeric: true }));
+};
+
+const subsectionTokens = (lecture) =>
+  String(lecture?.subsection || '')
+    .split(',')
+    .map((value) => value.trim().toUpperCase())
+    .filter(Boolean);
+
+/** Section lectures that apply to one lab/sub-section, or to everyone when no cohort is chosen. */
+export const sectionLecturesForCohort = (section, cohortId = '') => {
+  const lectures = section?.lectures || [];
+  if (!cohortId) return lectures;
+  const target = String(cohortId).toUpperCase();
+  return lectures.filter((lecture) => {
+    const tokens = subsectionTokens(lecture);
+    return !tokens.length || tokens.includes(target);
+  });
+};
+
+/**
+ * Base section timetable + the selected lab/sub-section + the selected
+ * mentoring group. Mentoring groups are overlays in the official FET export:
+ * their tables repeat shared lectures and add the mentoring class. Only the
+ * extra entries are merged, exactly like the legacy Compass overlay.
+ */
+export const combinedLectures = (timetable, sectionId, options = {}, profile = {}) => {
+  const entry = findSection(timetable, sectionId);
+  const base = baseSectionFor(timetable, entry) || entry;
+  if (!base) return [];
+  const requestedCohort =
+    options.cohort || (entry?.kind === 'subgroup' && !entry.mentoringGroup ? entry.id : '');
+  const cohortId = String(requestedCohort || '').toUpperCase();
+  const mentoringId = options.mentoring === true
+    ? entry?.mentoringGroup
+      ? entry.id
+      : ''
+    : options.mentoring || '';
+  const mentoringEntry = mentoringId ? findSection(timetable, mentoringId) : null;
+
+  const decorated = (lecture, extra = {}) => ({
+    ...lecture,
+    sectionId: base.id,
+    sectionLabel: base.label,
+    branch: base.branch,
+    year: base.year,
+    ...extra,
+  });
+
+  const baseLectures = sectionLecturesForCohort(base, cohortId).map((lecture) => decorated(lecture));
+  if (!mentoringEntry || baseSectionFor(timetable, mentoringEntry)?.id !== base.id) return baseLectures;
+
+  const profileGroup = String(profile.academicGroup || '').toUpperCase();
+  const appliesToProfile = profileGroup && profileGroup === mentoringEntry.id.toUpperCase();
+  const seen = new Set(baseLectures.map((lecture) => `${lecture.day}|${lecture.start}|${lecture.end}|${lecture.subject}`));
+  const overlay = [];
+  for (const lecture of mentoringEntry.lectures || []) {
+    const key = `${lecture.day}|${lecture.start}|${lecture.end}|${lecture.subject}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    let item = decorated(lecture, { mentoringGroup: mentoringEntry.mentoringGroup, fromMentoringGroup: true });
+    if (isMentoringLecture(item) && appliesToProfile) {
+      const mentor = String(profile.mentor || '').trim();
+      const venue = String(profile.mentorVenue || '').trim();
+      if (!item.teacher && mentor) item = { ...item, teacher: mentor, teachers: [mentor] };
+      if (!item.room && venue) item = { ...item, room: venue };
+    }
+    overlay.push(item);
+  }
+  return [...baseLectures, ...overlay].sort(
+    (a, b) => a.day - b.day || a.period - b.period || timeToMin(a.start) - timeToMin(b.start),
+  );
+};
+
+const groupTokens = (timetable) =>
+  new Set(
+    [
+      ...(timetable?.sections || []).map((entry) => entry.id),
+      ...subgroupList(timetable).map((entry) => entry.id),
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).toUpperCase()),
+  );
+
+/** FET puts a group code in the room column for some mentoring slots. */
+const looksLikeGroupCode = (value, timetable, extra = []) => {
+  const token = String(value || '').trim().toUpperCase();
+  if (!token) return false;
+  if (extra.some((item) => String(item || '').toUpperCase() === token)) return true;
+  return groupTokens(timetable).has(token);
+};
+
+const lectureSlotKey = (lecture) => `${lecture.day}|${lecture.period}`;
+
+/**
+ * The section, lab sub-section and mentoring group that belong to a saved
+ * profile. This mirrors the legacy Compass overlay: the section timetable is
+ * the base, the student's lab batch filters practicals, and the academic
+ * group (for example ECBM1) supplies the mentoring class.
+ */
+export const personalizationContext = (timetable, profile = {}) => {
+  const entry =
+    findSection(timetable, profile.sectionId) ||
+    findSection(timetable, profile.subsection) ||
+    findSection(timetable, profile.section);
+  const base = baseSectionFor(timetable, entry) || entry || null;
+  if (!base) return null;
+
+  const subsection = String(profile.subsection || '').toUpperCase();
+  const subsectionEntry = subsection ? findSection(timetable, subsection) : null;
+  const cohortId =
+    subsectionEntry && baseSectionFor(timetable, subsectionEntry)?.id === base.id
+      ? subsectionEntry.id.toUpperCase()
+      : entry?.kind === 'subgroup' && !entry.mentoringGroup && baseSectionFor(timetable, entry)?.id === base.id
+        ? entry.id.toUpperCase()
+        : '';
+
+  const requestedGroup = String(profile.academicGroup || '').toUpperCase();
+  const groupEntry = requestedGroup ? findSection(timetable, requestedGroup) : null;
+  const mentoringEntry =
+    groupEntry?.mentoringGroup && baseSectionFor(timetable, groupEntry)?.id === base.id ? groupEntry : null;
+  const academicGroup = mentoringEntry?.id?.toUpperCase() || requestedGroup || '';
+
+  return {
+    base,
+    cohortId,
+    academicGroup,
+    mentoringEntry,
+    mentoringGroupLabel: mentoringEntry?.mentoringGroup || '',
+  };
+};
+
+/**
+ * A section object with the profile's lab batch and mentoring group applied.
+ * Every mentoring lecture that belongs to the profile gets the mentor and
+ * venue from the roster when the official export leaves them blank (the same
+ * fill the legacy Compass overlay performed).
+ */
+export const personalizeSection = (timetable, profile = {}) => {
+  const context = personalizationContext(timetable, profile);
+  if (!context) return null;
+  const { base, cohortId, academicGroup, mentoringEntry, mentoringGroupLabel } = context;
+  const mentor = String(profile.mentor || '').trim();
+  const mentorVenue = String(profile.mentorVenue || profile.venue || '').trim();
+
+  const appliesToProfile = (lecture) => {
+    const tokens = subsectionTokens(lecture);
+    if (!tokens.length) return true;
+    if (isMentoringLecture(lecture)) {
+      if (academicGroup) {
+        if (tokens.includes(academicGroup)) return true;
+        // A mentoring slot tagged with a different mentoring group belongs
+        // to someone else; leave it out so the student sees their own slot.
+        return !tokens.some((token) => token.startsWith(`${base.id}M`));
+      }
+      if (cohortId) return tokens.includes(cohortId);
+      return true;
+    }
+    if (!cohortId) return true;
+    return tokens.includes(cohortId);
+  };
+
+  const decorate = (lecture, extra = {}) => {
+    let item = {
+      ...lecture,
+      sectionId: base.id,
+      sectionLabel: base.label,
+      branch: base.branch,
+      year: base.year,
+      ...extra,
+    };
+    if (isMentoringLecture(item)) {
+      const tokens = subsectionTokens(item);
+      const belongsToProfile =
+        !tokens.length ||
+        (academicGroup && tokens.includes(academicGroup)) ||
+        (cohortId && tokens.includes(cohortId));
+      if (belongsToProfile) {
+        item = { ...item, mentoring: true };
+        if (academicGroup) item.mentoringGroup = academicGroup;
+        if (mentoringGroupLabel) item.mentoringGroupLabel = mentoringGroupLabel;
+        if (looksLikeGroupCode(item.room, timetable, [cohortId, academicGroup])) item.room = '';
+        if (!item.teacher && mentor) item = { ...item, teacher: mentor, teachers: [mentor] };
+        if (!item.room && mentorVenue) item = { ...item, room: mentorVenue };
+      }
+    }
+    return item;
+  };
+
+  const lectures = (base.lectures || []).filter(appliesToProfile).map((lecture) => decorate(lecture));
+
+  if (mentoringEntry) {
+    const bySlot = new Map(lectures.map((lecture) => [lectureSlotKey(lecture), lecture]));
+    for (const lecture of mentoringEntry.lectures || []) {
+      const existing = bySlot.get(lectureSlotKey(lecture));
+      if (existing) {
+        // The mentoring subgroup repeats the shared section lectures. Keep
+        // the section copy but enrich a matching mentoring slot.
+        if (isMentoringLecture(existing) && isMentoringLecture(lecture)) {
+          const enriched = decorate({ ...existing, ...lecture, id: existing.id }, {
+            mentoringGroup: academicGroup,
+            mentoringGroupLabel,
+            fromMentoringGroup: true,
+          });
+          bySlot.set(lectureSlotKey(lecture), enriched);
+        }
+        continue;
+      }
+      const overlay = decorate(lecture, {
+        mentoringGroup: academicGroup,
+        mentoringGroupLabel,
+        fromMentoringGroup: true,
+      });
+      if (isMentoringLecture(overlay) && looksLikeGroupCode(overlay.room, timetable, [cohortId, academicGroup])) {
+        overlay.room = '';
+        if (mentorVenue) overlay.room = mentorVenue;
+      }
+      bySlot.set(lectureSlotKey(lecture), overlay);
+    }
+    lectures.splice(0, lectures.length, ...bySlot.values());
+  }
+
+  lectures.sort((a, b) => a.day - b.day || a.period - b.period || timeToMin(a.start) - timeToMin(b.start));
+
+  return {
+    ...base,
+    id: base.id,
+    label: base.label,
+    lectures,
+    personalized: true,
+    cohortId,
+    academicGroup,
+    mentoringGroup: mentoringGroupLabel,
+    mentor,
+    mentorVenue,
+    mentoringEntryId: mentoringEntry?.id || '',
+  };
+};
+
+/** All mentoring classes the official export publishes for a section, deduped. */
+export const mentoringClassesForSection = (timetable, section) => {
+  const base = baseSectionFor(timetable, section);
+  if (!base) return [];
+  const lectures = [...(base.lectures || [])];
+  for (const group of mentoringGroupsForSection(timetable, base)) lectures.push(...(group.lectures || []));
+  const seen = new Set();
+  const result = [];
+  for (const lecture of lectures) {
+    if (!isMentoringLecture(lecture)) continue;
+    const key = `${lecture.day}-${lecture.period}-${norm(lecture.subject)}-${lecture.room}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({ ...lecture, sectionId: base.id, sectionLabel: base.label });
+  }
+  return result.sort((a, b) => a.day - b.day || a.period - b.period);
+};
+
 export const lecturesOn = (section, day) => {
   if (!section) return [];
   return (section.lectures || [])
@@ -139,7 +436,7 @@ export const teacherSchedule = (timetable, teacherName) => {
 export const roomSchedule = (timetable, roomCode) => {
   const target = norm(roomCode).replace(/\s+/g, '');
   const lectures = [];
-  for (const section of timetable?.sections || []) {
+  for (const section of timetableEntries(timetable)) {
     for (const lecture of section.lectures || []) {
       if (norm(lecture.room).replace(/\s+/g, '') === target) {
         lectures.push({ ...lecture, sectionId: section.id, sectionLabel: section.label, branch: section.branch, year: section.year });
@@ -149,29 +446,148 @@ export const roomSchedule = (timetable, roomCode) => {
   return dedupeLectures(lectures).sort((a, b) => a.day - b.day || a.period - b.period);
 };
 
-export const occupiedRooms = (timetable, day, period) => {
+const normalizeRoom = (value) => norm(value).replace(/\s+/g, '').toUpperCase();
+
+export const roomKindLabel = (room) => {
+  if (!room) return 'Room';
+  if (room.openStudySpace || room.kind === 'study-space') return 'Open study space';
+  if (/COMP\s*LAB/i.test(room.code || '')) return 'Computational lab';
+  return (
+    room.kindLabel ||
+    {
+      classroom: 'Classroom',
+      lab: 'Laboratory',
+      workshop: 'Workshop',
+      seminar: 'Seminar hall',
+      facility: 'Room',
+      office: 'Office',
+    }[room.kind] ||
+    'Room'
+  );
+};
+
+/**
+ * Occupancy for one day/period.
+ *
+ * The official room timetable is authoritative because it includes labs,
+ * workshops, seminar halls and parallel sub-group practicals that a section
+ * schedule alone can miss. If the room timetable is unavailable (for example
+ * an old cached copy), fall back to the published section/sub-group lectures.
+ */
+export const occupiedRooms = (data, day, period) => {
   const occupied = new Map();
-  for (const section of timetable?.sections || []) {
+  const add = (roomCode, entry) => {
+    const key = normalizeRoom(roomCode);
+    if (!key) return;
+    const current = occupied.get(key) || [];
+    current.push(entry);
+    occupied.set(key, current);
+  };
+
+  const roomTimetable = data?.roomTimetable || data;
+  if (Array.isArray(roomTimetable?.rooms) && roomTimetable.rooms.some((room) => Array.isArray(room.occupancy))) {
+    for (const room of roomTimetable.rooms) {
+      for (const entry of room.occupancy || []) {
+        if (entry.day !== day || entry.period !== period) continue;
+        add(room.code, {
+          ...entry,
+          room: room.code,
+          sectionId: (entry.groups || []).join(', '),
+          sectionLabel: (entry.groups || []).join(', '),
+        });
+      }
+    }
+    return occupied;
+  }
+
+  const timetable = data?.timetable || data;
+  for (const section of timetableEntries(timetable)) {
     for (const lecture of section.lectures || []) {
       if (lecture.day !== day || lecture.period !== period || !lecture.room) continue;
-      const key = norm(lecture.room).replace(/\s+/g, '').toUpperCase();
-      const current = occupied.get(key) || [];
-      current.push({ ...lecture, sectionId: section.id, sectionLabel: section.label });
-      occupied.set(key, current);
+      add(lecture.room, { ...lecture, sectionId: section.id, sectionLabel: section.label });
     }
   }
   return occupied;
 };
 
-export const freeClassrooms = (timetable, rooms, day, period) => {
-  const occupied = occupiedRooms(timetable, day, period);
-  return (rooms || [])
-    .filter((room) => room.kind === 'classroom' || room.kind === 'lab')
-    .filter((room) => {
-      const key = norm(room.id).replace(/\s+/g, '').toUpperCase();
-      return !occupied.has(key);
+const ROOM_KINDS = new Set(['classroom', 'lab', 'workshop', 'seminar', 'facility', 'study-space']);
+
+export const freeClassrooms = (data, day, period) => {
+  const occupied = occupiedRooms(data, day, period);
+  const rooms = data?.rooms?.rooms || [];
+  return rooms
+    .filter((room) => ROOM_KINDS.has(room.kind) || room.openStudySpace)
+    .filter((room) => room.openStudySpace || !occupied.has(normalizeRoom(room.code)))
+    .map((room) => {
+      const busy = occupied.get(normalizeRoom(room.code)) || [];
+      return {
+        ...room,
+        free: !busy.length || Boolean(room.openStudySpace),
+        alwaysFree: Boolean(room.openStudySpace),
+        occupiedBy: busy,
+        roomKind: roomKindLabel(room),
+      };
     })
-    .map((room) => ({ ...room, free: true }));
+    .sort((a, b) => {
+      if (a.openStudySpace !== b.openStudySpace) return a.openStudySpace ? -1 : 1;
+      return (
+        String(a.block || '').localeCompare(String(b.block || '')) ||
+        String(a.code).localeCompare(String(b.code), undefined, { numeric: true })
+      );
+    });
+};
+
+export const roomBlocks = (data) => {
+  const counts = new Map();
+  for (const room of data?.rooms?.rooms || []) {
+    if (!ROOM_KINDS.has(room.kind) && !room.openStudySpace) continue;
+    const key = room.block || 'Other rooms & labs';
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => {
+      if (a[0] === 'F-Block') return -1;
+      if (b[0] === 'F-Block') return 1;
+      if (a[0] === 'S-Block') return -1;
+      if (b[0] === 'S-Block') return 1;
+      if (a[0] === 'G-Block') return -1;
+      if (b[0] === 'G-Block') return 1;
+      return a[0].localeCompare(b[0]);
+    })
+    .map(([label, count]) => ({ value: label, label, count }));
+};
+
+/** Weekly room schedule from the official room timetable, with a section fallback. */
+export const roomScheduleFromData = (data, roomCode) => {
+  const target = normalizeRoom(roomCode);
+  const room = (data?.roomTimetable?.rooms || []).find(
+    (item) => normalizeRoom(item.code) === target || normalizeRoom(item.id) === target,
+  );
+  if (room?.occupancy?.length) {
+    const seen = new Set();
+    const lectures = [];
+    for (const entry of room.occupancy) {
+      const key = `${entry.day}-${entry.period}-${norm(entry.subject)}-${(entry.groups || []).join(',')}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      lectures.push({
+        id: `${room.code}-${entry.day}-${entry.period}-${lectures.length}`,
+        day: entry.day,
+        period: entry.period,
+        start: entry.start,
+        end: entry.end,
+        subject: entry.subject,
+        teacher: (entry.teachers || []).join(', '),
+        teachers: entry.teachers || [],
+        room: room.code,
+        sectionId: (entry.groups || []).join(', '),
+        sectionLabel: (entry.groups || []).join(', '),
+        subsection: entry.subsection || '',
+      });
+    }
+    return lectures.sort((a, b) => a.day - b.day || a.period - b.period);
+  }
+  return roomSchedule(data?.timetable, roomCode);
 };
 
 export const compareSections = (timetable, firstId, secondId, day) => {

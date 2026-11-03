@@ -14,12 +14,14 @@ import {
 } from './utils.js';
 import { findRoute, placePhoto, walkMinutes } from './campus.js';
 import {
+  baseSectionFor,
   findSection,
   findCurrentAndNext,
   freeClassrooms,
   freePeriods,
   lecturesOn,
   nextClassTodayOrLater,
+  personalizeSection,
   roomSchedule,
   sectionForStudent,
   teacherSchedule,
@@ -125,6 +127,26 @@ const ORDINAL_WORDS = {
   fourth: 4,
   '4th': 4,
 };
+
+/**
+ * Common first-year course abbreviations used by students and by the legacy
+ * Compass project. The timetable spells these subjects out, so the assistant
+ * expands the short form instead of failing to match.
+ */
+const COURSE_GLOSSARY = [
+  {
+    short: 'EDG',
+    title: 'Engineering Drawing and Graphics',
+    aliases: ['edg', 'engineering drawing', 'engineering graphics', 'engg drawing', 'eng drawing', 'drawing and graphics'],
+    subjectWords: ['engg drawing and graphics', 'engineering drawing', 'engineering graphics'],
+  },
+  {
+    short: 'PPS',
+    title: 'Programming for Problem Solving',
+    aliases: ['pps', 'programming for problem solving', 'problem solving'],
+    subjectWords: ['programming for problem solving'],
+  },
+];
 
 const BRANCH_WORDS = {
   ece: 'EC',
@@ -561,9 +583,12 @@ function studentSummary(student, data) {
   return [
     `**${student.name}**`,
     `CRN **${student.crn}** · ${branchShort(student.branch)} · Section **${student.section}**${student.subsection ? ` · Sub-section ${student.subsection}` : ''}`,
-    `Mentor: ${student.mentor || 'Not listed'}${student.mentorVenue ? ` · Mentor venue: ${student.mentorVenue}` : ''}`,
+    student.academicGroup ? `Academic / mentoring group: **${student.academicGroup}**` : '',
+    `Mentor: ${student.mentor || 'Not listed'}${student.mentorVenue ? ` · Mentor venue: ${student.mentorVenue}` : ''}${student.mentorPhone ? ` · Mentor phone: ${student.mentorPhone}` : ''}`,
     section ? `Timetable match: ${section.label}` : 'Timetable: section not in the current export',
-  ].join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 function answerStudent(student, data, profile, memory) {
@@ -629,6 +654,90 @@ function answerFaculty(person, data, memory) {
   };
 }
 
+function findCourseAlias(nq) {
+  const tokens = new Set(nq.split(/\s+/).filter(Boolean));
+  for (const course of COURSE_GLOSSARY) {
+    const aliases = [...course.aliases, course.short.toLowerCase()];
+    if (aliases.some((alias) => (alias.includes(' ') ? nq.includes(alias) : tokens.has(alias)))) return course;
+  }
+  return null;
+}
+
+function courseLectures(data, course) {
+  const words = course.subjectWords.map(norm);
+  const lectures = [];
+  for (const entry of timetableEntries(data.timetable)) {
+    for (const lecture of entry.lectures || []) {
+      const subject = norm(lecture.subject);
+      if (!words.some((word) => subject.includes(word))) continue;
+      lectures.push({ ...lecture, sectionId: entry.id, sectionLabel: entry.label });
+    }
+  }
+  return lectures.sort((a, b) => a.day - b.day || a.period - b.period);
+}
+
+function answerCourseAlias(course, data, nq) {
+  const lectures = courseLectures(data, course);
+  const teachers = [
+    ...new Set(lectures.flatMap((lecture) => (lecture.teachers?.length ? lecture.teachers : lecture.teacher ? [lecture.teacher] : []))),
+  ];
+  const asksTeacher = /\b(who|teach|teacher|faculty|professor)\b/.test(nq);
+  const asksClass = /\b(timetable|class|classes|schedule|lecture|period|when)\b/.test(nq);
+  const openTeacher = teachers[0]
+    ? action('Open teacher timetable', `/timetable?teacher=${encodeURIComponent(teachers[0])}`, 'timetable')
+    : null;
+  if (asksTeacher) {
+    return {
+      intent: 'subject-teacher',
+      confidence: teachers.length ? 'high' : 'medium',
+      text: [
+        `**${course.short}** is **${course.title}**.`,
+        teachers.length
+          ? `In the current timetable it is listed with ${teachers.map((name) => `**${name}**`).join(', ')} (${lectures.length} classes).`
+          : 'The official timetable does not name a teacher for this subject in the current export.',
+        'The timetable does not prove who is the official course coordinator.',
+      ].join('\n'),
+      actions: [openTeacher, action('Open Study hub', '/study', 'study')].filter(Boolean),
+      memory: { lastSubject: course.short, lastIntent: 'subject-teacher' },
+    };
+  }
+  if (asksClass && lectures.length) {
+    const seen = new Set();
+    const lines = [];
+    for (const lecture of lectures) {
+      const key = `${lecture.day}-${lecture.start}-${lecture.sectionId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      lines.push(`${DAYS[lecture.day]} · ${formatClock(lecture.start)} · ${lecture.sectionId}${lecture.room ? ` · ${lecture.room}` : ''}${lecture.teacher ? ` · ${lecture.teacher}` : ''}`);
+      if (lines.length >= 10) break;
+    }
+    return {
+      intent: 'timetable',
+      confidence: 'high',
+      text: `**${course.short}** is **${course.title}**. Classes in the current export:\n${lines.join('\n')}\n\nSource: official FET export (17 Sep 2026). Confirm room changes with your department.`,
+      actions: [
+        action('Open timetable', `/timetable?section=${lectures[0].sectionId}`, 'timetable'),
+        openTeacher,
+      ].filter(Boolean),
+      memory: { lastSubject: course.short, lastSectionId: lectures[0].sectionId, lastIntent: 'timetable' },
+    };
+  }
+  return {
+    intent: 'glossary',
+    confidence: 'high',
+    text: [
+      `**${course.short}** stands for **${course.title}**.`,
+      lectures.length
+        ? `The official timetable lists it as **${lectures[0].subject.replace(/\s+[LPT]$/, '')}**${teachers.length ? ` and names ${teachers.map((name) => `**${name}**`).join(', ')}` : ''}.`
+        : 'It is not scheduled in the current timetable export.',
+      'Ask “who teaches PPS” or “EDG timetable” for the current slots.',
+    ].join('\n'),
+    actions: [openTeacher, action('Open Study hub', '/study', 'study')].filter(Boolean),
+    chips: [`Who teaches ${course.short}?`, `${course.short} timetable`],
+    memory: { lastSubject: course.short, lastIntent: 'glossary' },
+  };
+}
+
 function answerPlace(place, data, nq, memory) {
   const route = findRoute(data.campus, 'main-gate', place.id);
   const lines = [
@@ -676,7 +785,11 @@ function answerRoom(room, data, memory) {
 }
 
 function answerTimetable({ data, profile, memory, nq, section, dayInfo, teacher, room, student, now = new Date(), nowIntent = false }) {
-  const sectionLabel = section?.kind === 'subgroup' ? `${section.label} · subsection ${section.id}` : section?.label;
+  const sectionLabel = section?.personalized
+    ? `${section.label}${section.cohortId ? ` · subsection ${section.cohortId}` : ''}${section.academicGroup ? ` · ${section.academicGroup}` : ''}`
+    : section?.kind === 'subgroup'
+      ? `${section.label} · subsection ${section.id}`
+      : section?.label;
   if (teacher) {
     const schedule = teacherSchedule(data.timetable, teacher.name || teacher);
     const targetDay = dayInfo.explicit ? dayInfo.day : null;
@@ -750,14 +863,8 @@ function answerTimetable({ data, profile, memory, nq, section, dayInfo, teacher,
   ) {
     let activeSection = section;
     let { current, next } = findCurrentAndNext(activeSection, now, data.timetable);
-    if (!current && !next && section.kind === 'subgroup') {
-      const baseSection = getIndexes(data).sections.find(
-        (entry) =>
-          entry.kind === 'section' &&
-          entry.year === section.year &&
-          entry.branch === section.branch &&
-          entry.group === section.group,
-      );
+    if (!current && !next && (section.kind === 'subgroup' || (section.personalized && section.cohortId))) {
+      const baseSection = findSection(data.timetable, section.sectionId || section.id);
       if (baseSection) {
         const base = findCurrentAndNext(baseSection, now, data.timetable);
         if (base.current || base.next) {
@@ -858,7 +965,7 @@ function answerFreeRooms({ data, nq, dayInfo, now = new Date() }) {
       actions: [action('Open campus map', '/map', 'map')],
     };
   }
-  const free = freeClassrooms(data.timetable, data.rooms?.rooms, day, targetPeriod);
+  const free = freeClassrooms(data, day, targetPeriod);
   const rooms = free.filter((room) => room.kind === 'classroom').slice(0, 16);
   const timeStart = [510, 570, 630, 690, 750, 810, 870, 930][targetPeriod];
   return {
@@ -1282,6 +1389,17 @@ export function answerQuestion(raw, context = {}) {
   const faculty = facultyResult.matches[0];
   const explicitSection = directSection(nq, getIndexes(data).sections);
   const section = explicitSection || resolveSection(nq, data, profile, memory, student);
+  const profileEntry = profile?.sectionId ? findSection(data.timetable, profile.sectionId) : null;
+  const profileBase = profileEntry ? baseSectionFor(data.timetable, profileEntry) : null;
+  const sectionBase = section ? baseSectionFor(data.timetable, section) : null;
+  const personalizationProfile =
+    section?.kind === 'subgroup' && !section.mentoringGroup
+      ? { ...profile, sectionId: section.id, subsection: section.id }
+      : profile;
+  const activeSection =
+    profileBase && sectionBase && profileBase.id === sectionBase.id
+      ? personalizeSection(data.timetable, personalizationProfile) || section
+      : section;
   const place = findPlace(nq, data);
   const room = findRoom(nq, data);
   const dayInfo = detectDay(nq, now);
@@ -1307,6 +1425,12 @@ export function answerQuestion(raw, context = {}) {
       actions: [action('Open student directory', `/students?q=${encodeURIComponent(original)}`, 'students')],
       memory: { lastIntent: 'student-list' },
     };
+  }
+
+  // Course abbreviations such as EDG and PPS, before generic timetable/teacher matching.
+  const courseAlias = findCourseAlias(nq);
+  if (courseAlias && !/\b(papers?|syllabus|question|previous|exam|result|fee)\b/.test(nq)) {
+    return answerCourseAlias(courseAlias, data, nq);
   }
 
   // Contacts and college facts.
@@ -1337,7 +1461,7 @@ export function answerQuestion(raw, context = {}) {
 
   // Current/next class before generic place lookup, so "where is my class" does not become a map search.
   if (isNowClassQuery(nq, explicitSection, place)) {
-    return answerTimetable({ data, profile, memory, nq, section, dayInfo, now, nowIntent: true });
+    return answerTimetable({ data, profile, memory, nq, section: activeSection, dayInfo, now, nowIntent: true });
   }
 
   // Faculty and subject-teacher questions before generic place scoring.
@@ -1455,7 +1579,7 @@ export function answerQuestion(raw, context = {}) {
     return answerFreeRooms({ data, nq, dayInfo, now });
   }
   if (/\btimetable|class|classes|schedule|lecture|period|periods|free period|free periods|next class|what do i have\b/.test(nq)) {
-    return answerTimetable({ data, profile, memory, nq, section, dayInfo, teacher: faculty, room, student, now });
+    return answerTimetable({ data, profile, memory, nq, section: activeSection, dayInfo, teacher: faculty, room, student, now });
   }
 
   // Student lookup fallback (for "who is ..." or a name-only query).
