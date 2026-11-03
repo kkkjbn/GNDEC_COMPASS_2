@@ -1,0 +1,12 @@
+{
+  "name": "GNDEC Compass",
+  "short_name": "Compass",
+  "description": "Your GNDEC campus, in view.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f8f5",
+  "theme_color": "#174c3d",
+  "orientation": "any",
+  "icons": [{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
