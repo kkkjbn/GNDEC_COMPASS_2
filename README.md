@@ -6,7 +6,7 @@ A student-built, installable campus companion for **Guru Nanak Dev Engineering C
 - Repository: **https://github.com/kkkjbn/GNDEC_COMPASS_2**
 - Legacy app (untouched): `https://gndec-compass.koushikjain2007.workers.dev/`
 
-The repo/Worker split, and why the legacy stack should not be overwritten, is documented in [`DEPLOYMENT.md`](./DEPLOYMENT.md).
+The repo/Worker split, and why the legacy stack should not be overwritten, is documented in [`DEPLOYMENT.md`](./DEPLOYMENT.md). The collected image groups, their provenance and naming caveats are documented in [`IMAGE-INVENTORY.md`](./IMAGE-INVENTORY.md).
 
 ## What is inside
 

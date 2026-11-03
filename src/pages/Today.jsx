@@ -190,7 +190,7 @@ export default function Today() {
           </div>
         </div>
         <div className="hero-media">
-          <img src="/img/hero/gndec_2022_newgate.jpg" alt="The GNDEC main entrance on Gill Road" />
+          <img src="/img/hero/gndec_gne_front.jpg" alt="The GNDEC main entrance on Gill Road" />
           <span className="hero-photo-tag">
             <MapPin size={13} /> GNDEC · Gill Road, Ludhiana
           </span>
