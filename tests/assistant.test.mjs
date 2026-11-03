@@ -41,6 +41,7 @@ const cases = [
   ['D2CSB timetable', 'timetable', /2nd Year/],
   ['kal ki timetable', 'timetable', /Wednesday/],
   ['ECE B1 free periods', 'free-periods', /subsection ECB1/],
+  ['ECE B1 breaks today', 'free-periods', /Breaks and free periods/],
   ['free rooms period 3', 'free-rooms', /look free/],
   ['AM-101 previous papers', 'papers', /AM-101/],
   ['what is 18% of 450', 'math', /81/],

@@ -2629,6 +2629,30 @@ button.metric:hover {
   box-shadow: 0 0 0 4px rgba(189, 106, 61, 0.14);
 }
 
+.timeline-row.free-slot {
+  background: linear-gradient(90deg, transparent, var(--paper-3) 45%, transparent);
+  color: var(--muted);
+}
+
+.timeline-row.free-slot .timeline-dot {
+  border-style: dashed;
+  border-color: var(--muted-2);
+  background: var(--paper);
+}
+
+.timeline-row.free-slot .timeline-title b {
+  font-weight: 600;
+}
+
+.timeline-row.free-slot .timeline-copy p {
+  color: var(--muted);
+}
+
+.timeline-row.free-slot .mini-action,
+.timeline-row.free-slot .room-pill {
+  color: var(--muted);
+}
+
 .timeline-copy {
   min-width: 0;
   flex: 1;

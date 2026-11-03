@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { personalizeSection, freeClassrooms, roomBlocks, isMentoringLecture } from '../src/lib/timetable.js';
+import { personalizeSection, freeClassrooms, roomBlocks, isMentoringLecture, dayPlanOn } from '../src/lib/timetable.js';
+import { timeToMin } from '../src/lib/utils.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (name) => JSON.parse(fs.readFileSync(path.join(root, 'public', 'data', `${name}.json`), 'utf8'));
@@ -100,6 +101,26 @@ test('roster carries legacy serial and mentor phone fields', () => {
   assert.equal(record.serialNo, '68');
   assert.equal(record.currentSerialNo, '68');
   assert.equal(record.venue, 'G6');
+});
+
+test('day plan inserts honest break slots between classes', () => {
+  const record = student('2617070');
+  const section = personalizeSection(timetable, profileFor(record));
+  for (const day of [0, 1, 2, 3, 4]) {
+    const plan = dayPlanOn(section, day, timetable);
+    const classes = plan.filter((item) => !item.free);
+    const breaks = plan.filter((item) => item.free);
+    assert.equal(plan.length, timetable.periods.length, `day ${day} must account for every published period`);
+    for (const slot of breaks) {
+      assert.ok(!classes.some((lecture) => timeToMin(lecture.start) < timeToMin(slot.end) && timeToMin(lecture.end) > timeToMin(slot.start)));
+    }
+    for (const lecture of classes) {
+      assert.ok(!breaks.some((slot) => timeToMin(lecture.start) < timeToMin(slot.end) && timeToMin(lecture.end) > timeToMin(slot.start)));
+    }
+  }
+  const monday = dayPlanOn(section, 0, timetable);
+  assert.ok(monday.some((item) => !item.free && isMentoringLecture(item)), 'mentoring class must stay a class, not become a break');
+  assert.ok(!monday.some((item) => item.free && item.period === 5), 'mentoring period must not be shown as a break');
 });
 
 test('web UI no longer links to external map or location services', () => {

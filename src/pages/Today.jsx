@@ -7,6 +7,7 @@ import {
   CalendarDays,
   ChevronDown,
   Clock3,
+  Coffee,
   Compass,
   ExternalLink,
   FileText,
@@ -21,7 +22,7 @@ import {
 import { Link, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
 import { DAYS, DAYS_SHORT, branchShort, formatClock, greeting, longDate, dayIndexFor, dateKey } from '../lib/utils.js';
-import { findCurrentAndNext, findSection, isMentoringLecture, lecturesOn, nextClassTodayOrLater, personalizeSection } from '../lib/timetable.js';
+import { findCurrentAndNext, findSection, isMentoringLecture, lecturesOn, nextClassTodayOrLater, personalizeSection, dayPlanOn } from '../lib/timetable.js';
 import { findRoute } from '../lib/campus.js';
 import { Badge, DataFoot, Metric, PageHeader, Panel, PanelHead, RichText } from '../components/ui.jsx';
 import { useShell } from '../components/Shell.jsx';
@@ -123,6 +124,8 @@ export default function Today() {
   const timetable = data?.timetable;
   const campus = data?.campus;
   const lectures = useMemo(() => (day >= 0 ? lecturesOn(section, day) : []), [section, day]);
+  const dayPlan = useMemo(() => (day >= 0 ? dayPlanOn(section, day, timetable) : []), [section, day, timetable]);
+  const breakCount = dayPlan.filter((item) => item.free).length;
   const notices = useMemo(
     () => [...(data?.notices?.notices || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 3),
     [data],
@@ -221,7 +224,7 @@ export default function Today() {
           <PanelHead
             eyebrow="YOUR DAY"
             title={chosenDay === dayIndexFor(now) ? 'Today’s classes' : `${DAYS[chosenDay]}’s classes`}
-            description={section ? `${section.label}${section.academicGroup ? ` · ${section.academicGroup}` : ''} · ${lectures.length} ${lectures.length === 1 ? 'class' : 'classes'} listed` : 'Choose a section to see your classes'}
+            description={section ? `${section.label}${section.academicGroup ? ` · ${section.academicGroup}` : ''} · ${lectures.length} ${lectures.length === 1 ? 'class' : 'classes'}${breakCount ? ` · ${breakCount} ${breakCount === 1 ? 'break' : 'breaks'}` : ''}` : 'Choose a section to see your classes'}
             action={
               <Link to="/timetable" className="subtle-link">
                 Full week <ArrowRight size={14} />
@@ -252,32 +255,62 @@ export default function Today() {
 
           {lectures.length ? (
             <div className="day-timeline">
-              {lectures.map((lecture, index) => {
-                const start = lecture.start;
+              {dayPlan.map((item) => {
                 const nowTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                const isCurrent = chosenDay === dayIndexFor(now) && nowTime >= start && nowTime < lecture.end;
+                const isCurrent = !item.free && chosenDay === dayIndexFor(now) && nowTime >= item.start && nowTime < item.end;
+                if (item.free) {
+                  return (
+                    <div className="timeline-row free-slot" key={item.id}>
+                      <div className="timeline-time">
+                        <b>{formatClock(item.start)}</b>
+                        <small>{formatClock(item.end)}</small>
+                      </div>
+                      <span className="timeline-dot" />
+                      <div className="timeline-copy">
+                        <div className="timeline-title">
+                          <b>Break · no class listed</b>
+                          <Badge tone="neutral">Free period</Badge>
+                        </div>
+                        <p>
+                          Water, food or open study time
+                          <span>·</span>
+                          rooms are not reserved
+                        </p>
+                      </div>
+                      <div className="timeline-actions">
+                        <Link
+                          to={`/timetable?tab=free&day=${chosenDay}&period=${item.period}`}
+                          className="mini-action"
+                          title="Find a free room for this period"
+                        >
+                          <Coffee size={14} /> Free rooms
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                }
                 return (
-                  <div className={`timeline-row ${isCurrent ? 'current' : ''}`} key={lecture.id}>
+                  <div className={`timeline-row ${isCurrent ? 'current' : ''}`} key={item.id}>
                     <div className="timeline-time">
-                      <b>{formatClock(lecture.start)}</b>
-                      <small>{formatClock(lecture.end)}</small>
+                      <b>{formatClock(item.start)}</b>
+                      <small>{formatClock(item.end)}</small>
                     </div>
                     <span className="timeline-dot" />
                     <div className="timeline-copy">
                       <div className="timeline-title">
-                        <b>{lecture.subject}</b>
-                        {isMentoringLecture(lecture) && <Badge tone="gold">Mentoring</Badge>}
+                        <b>{item.subject}</b>
+                        {isMentoringLecture(item) && <Badge tone="gold">Mentoring</Badge>}
                         {isCurrent && <Badge tone="green">Now</Badge>}
                       </div>
                       <p>
-                        {lecture.teacher || lecture.teachers?.join(', ') || 'Faculty not listed'}
+                        {item.teacher || item.teachers?.join(', ') || 'Faculty not listed'}
                         <span>·</span>
-                        {lecture.room || 'Room not listed'}
+                        {item.room || 'Room not listed'}
                       </p>
                     </div>
                     <div className="timeline-actions">
-                      {lecture.room && (
-                        <Link to={`/map?room=${encodeURIComponent(lecture.room)}`} className="mini-action" title="Open room on map">
+                      {item.room && (
+                        <Link to={`/map?room=${encodeURIComponent(item.room)}`} className="mini-action" title="Open room on map">
                           <MapPin size={14} /> Map
                         </Link>
                       )}

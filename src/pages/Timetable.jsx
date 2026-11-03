@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ChevronDown,
   Clock3,
+  Coffee,
   DoorOpen,
   ExternalLink,
   Info,
@@ -27,6 +28,7 @@ import {
 import {
   baseSectionFor,
   compareSections,
+  dayPlanOn,
   findSection,
   freeClassrooms,
   isMentoringLecture,
@@ -290,7 +292,10 @@ export default function Timetable() {
     () => (profileApplies ? personalizeSection(timetable, profile) || section : section),
     [profileApplies, timetable, profile, section],
   );
-  const [day, setDay] = useState(() => Math.max(0, dayIndexFor(new Date())));
+  const [day, setDay] = useState(() => {
+    const requested = Number(searchParams.get('day'));
+    return Number.isInteger(requested) && requested >= 0 && requested <= 5 ? requested : Math.max(0, dayIndexFor(new Date()));
+  });
   const teacher = teacherQuery ? teacherQuery : '';
 
   const setParam = (updates, options = {}) => {
@@ -308,6 +313,8 @@ export default function Timetable() {
 
   const lectures = useMemo(() => (activeSection ? activeSection.lectures || [] : []), [activeSection]);
   const dayLectures = useMemo(() => (day >= 0 ? lecturesOn(activeSection, day) : []), [activeSection, day]);
+  const dayPlan = useMemo(() => (day >= 0 ? dayPlanOn(activeSection, day, timetable) : []), [activeSection, day, timetable]);
+  const breakCount = dayPlan.filter((item) => item.free).length;
   const weekCount = lectures.length;
   const coverage = sectionCoverage(activeSection);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
@@ -473,7 +480,7 @@ export default function Timetable() {
               <div>
                 <h2>{DAYS[day]} · {activeSection?.label || 'No section'}</h2>
                 <p>
-                  {dayLectures.length} classes · {8 - dayLectures.length} free periods
+                  {dayLectures.length} classes · {breakCount} {breakCount === 1 ? 'break' : 'breaks'}
                   {today === day ? ` · period ${currentPeriod + 1} now` : ''}
                 </p>
               </div>
@@ -483,31 +490,59 @@ export default function Timetable() {
             </div>
             {dayLectures.length ? (
               <div className="day-timeline timetable-list">
-                {dayLectures.map((lecture) => {
-                  const isCurrent = today === day && nowMinutes >= timeToMin(lecture.start) && nowMinutes < timeToMin(lecture.end);
+                {dayPlan.map((item) => {
+                  if (item.free) {
+                    return (
+                      <div className="timeline-row free-slot" key={item.id}>
+                        <div className="timeline-time">
+                          <b>{formatClock(item.start)}</b>
+                          <small>{formatClock(item.end)}</small>
+                        </div>
+                        <span className="timeline-dot" />
+                        <div className="timeline-copy">
+                          <div className="timeline-title">
+                            <b>Break · no class listed</b>
+                            <Badge tone="neutral">Free period</Badge>
+                          </div>
+                          <p>
+                            Open study time
+                            <span>·</span>
+                            rooms are not reserved
+                          </p>
+                        </div>
+                        <div className="timeline-actions">
+                          <Link to={`/timetable?tab=free&day=${day}&period=${item.period}`} className="room-pill" title="Find a free room for this period">
+                            <Coffee size={13} /> Free rooms
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  }
+                  const isCurrent = today === day && nowMinutes >= timeToMin(item.start) && nowMinutes < timeToMin(item.end);
                   return (
-                    <button type="button" className={`timeline-row clickable ${isCurrent ? 'current' : ''}`} key={lecture.id} onClick={() => setSelected(lecture)}>
+                    <button type="button" className={`timeline-row clickable ${isCurrent ? 'current' : ''}`} key={item.id} onClick={() => setSelected(item)}>
                       <div className="timeline-time">
-                        <b>{formatClock(lecture.start)}</b>
-                        <small>{formatClock(lecture.end)}</small>
+                        <b>{formatClock(item.start)}</b>
+                        <small>{formatClock(item.end)}</small>
                       </div>
                       <span className="timeline-dot" />
                       <div className="timeline-copy">
                         <div className="timeline-title">
-                          <b>{cleanSubject(lecture.subject)}</b>
-                          {subjectKind(lecture.subject) && <Badge tone="neutral">{subjectKind(lecture.subject)}</Badge>}
+                          <b>{cleanSubject(item.subject)}</b>
+                          {subjectKind(item.subject) && <Badge tone="neutral">{subjectKind(item.subject)}</Badge>}
+                          {isMentoringLecture(item) && <Badge tone="gold">Mentoring</Badge>}
                           {isCurrent && <Badge tone="green">Now</Badge>}
                         </div>
                         <p>
-                          {lecture.teacher || lecture.teachers?.join(', ') || 'Faculty not listed'}
+                          {item.teacher || item.teachers?.join(', ') || 'Faculty not listed'}
                           <span>·</span>
-                          {lecture.room || 'Room not listed'}
-                          {lecture.subsection ? <><span>·</span>{lecture.subsection}</> : null}
+                          {item.room || 'Room not listed'}
+                          {item.subsection ? <><span>·</span>{item.subsection}</> : null}
                         </p>
                       </div>
                       <div className="timeline-actions">
                         <span className="room-pill">
-                          <MapPin size={13} /> {lecture.room || 'TBC'}
+                          <MapPin size={13} /> {item.room || 'TBC'}
                         </span>
                         <ArrowRight size={15} />
                       </div>

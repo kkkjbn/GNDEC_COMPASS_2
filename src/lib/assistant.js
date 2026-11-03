@@ -18,7 +18,7 @@ import {
   findSection,
   findCurrentAndNext,
   freeClassrooms,
-  freePeriods,
+  freeSlotsOn,
   lecturesOn,
   nextClassTodayOrLater,
   personalizeSection,
@@ -840,16 +840,25 @@ function answerTimetable({ data, profile, memory, nq, section, dayInfo, teacher,
       memory,
     };
   }
-  if (nq.includes('free period') || nq.includes('free periods')) {
+  if (
+    nq.includes('free period') ||
+    nq.includes('free periods') ||
+    /breaks?\s+(today|tomorrow|on|for|between)/.test(nq) ||
+    /\bgaps?\s+between\b/.test(nq) ||
+    /\bkhali\b/.test(nq)
+  ) {
     const day = dayInfo.explicit ? dayInfo.day : dayIndexFor(new Date());
-    const free = freePeriods(section, day);
+    const free = freeSlotsOn(section, day, data.timetable);
     return {
       intent: 'free-periods',
       confidence: 'high',
       text: free.length
-        ? `Free periods for **${sectionLabel}** on **${DAYS[day]}**: ${free.map((period) => formatClock([510, 570, 630, 690, 750, 810, 870, 930][period])).join(', ')}. Confirm changes with your department.`
+        ? `Breaks and free periods for **${sectionLabel}** on **${DAYS[day]}**: ${free.map((slot) => `${formatClock(slot.start)}–${formatClock(slot.end)}`).join(', ')}.\nA free period means no class is listed — it does not reserve a room or promise quiet. Confirm changes with your department.`
         : `No free periods are listed for **${sectionLabel}** on **${DAYS[day]}**.`,
-      actions: [action('Open timetable', `/timetable?section=${section.id}`, 'timetable')],
+      actions: [
+        action('Open timetable', `/timetable?section=${section.id}`, 'timetable'),
+        action('Find a free room', '/timetable?tab=free', 'timetable'),
+      ],
       memory: { lastSectionId: section.id, lastIntent: 'free-periods' },
     };
   }
@@ -1560,7 +1569,7 @@ export function answerQuestion(raw, context = {}) {
     }
   }
 
-  if (place && !/\btimetable|paper|notice|syllabus|student|teacher|faculty|teach|class|lecture|periods?\b/.test(nq)) {
+  if (place && !/\btimetable|paper|notice|syllabus|student|teacher|faculty|teach|class|lecture|periods?\b|breaks?\s+(today|tomorrow|on|for|between)/.test(nq)) {
     return answerPlace(place, data, nq, memory);
   }
   if (room && !/\bfree\b/.test(nq)) return answerRoom(room, data, memory);
@@ -1578,7 +1587,7 @@ export function answerQuestion(raw, context = {}) {
   if (/\bfree room|\bfree rooms|room availability|which room|khali room\b/.test(nq)) {
     return answerFreeRooms({ data, nq, dayInfo, now });
   }
-  if (/\btimetable|class|classes|schedule|lecture|period|periods|free period|free periods|next class|what do i have\b/.test(nq)) {
+  if (/\btimetable|class|classes|schedule|lecture|period|periods|free period|free periods|breaks?\s+(today|tomorrow|on|for|between)|gaps?\s+between|next class|what do i have\b/.test(nq)) {
     return answerTimetable({ data, profile, memory, nq, section: activeSection, dayInfo, teacher: faculty, room, student, now });
   }
 

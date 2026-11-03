@@ -1,4 +1,4 @@
-import { DAYS, dayIndexFor, norm, personKey, timeToMin, uniqueBy } from './utils.js';
+import { DAYS, dayIndexFor, minToTime, norm, personKey, timeToMin, uniqueBy } from './utils.js';
 
 export const subgroupList = (timetable) =>
   Array.isArray(timetable?.subgroups) ? timetable.subgroups : Object.values(timetable?.subgroups || {});
@@ -387,9 +387,56 @@ export const nextClassTodayOrLater = (section, now = new Date()) => {
   return null;
 };
 
-export const freePeriods = (section, day) => {
-  const occupied = new Set(lecturesOn(section, day).map((lecture) => lecture.period));
-  return [0, 1, 2, 3, 4, 5, 6, 7].filter((period) => !occupied.has(period));
+export const freePeriods = (section, day, timetable = null) => {
+  const periods = timetable?.periods || [];
+  const lectures = lecturesOn(section, day);
+  if (!periods.length) {
+    const occupied = new Set(lectures.map((lecture) => lecture.period));
+    return [0, 1, 2, 3, 4, 5, 6, 7].filter((period) => !occupied.has(period));
+  }
+  return periods
+    .map((start, index) => {
+      const startMin = timeToMin(start);
+      const endMin = index + 1 < periods.length ? timeToMin(periods[index + 1]) : startMin + 60;
+      const busy = lectures.some((lecture) => timeToMin(lecture.start) < endMin && timeToMin(lecture.end) > startMin);
+      return busy ? null : index;
+    })
+    .filter((period) => period !== null);
+};
+
+/**
+ * Free slots between the published bells. A period counts as free only when
+ * no official class overlaps it, so a double-period lab does not create a
+ * false "free" slot halfway through.
+ */
+export const freeSlotsOn = (section, day, timetable) => {
+  const periods = timetable?.periods || [];
+  if (!periods.length) return [];
+  const lectures = lecturesOn(section, day);
+  return periods
+    .map((start, index) => {
+      const startMin = timeToMin(start);
+      const endMin = index + 1 < periods.length ? timeToMin(periods[index + 1]) : startMin + 60;
+      const busy = lectures.some((lecture) => timeToMin(lecture.start) < endMin && timeToMin(lecture.end) > startMin);
+      if (busy) return null;
+      return {
+        id: `free-${day}-${index}`,
+        day,
+        period: index,
+        start,
+        end: minToTime(endMin),
+        free: true,
+      };
+    })
+    .filter(Boolean);
+};
+
+/** Classes and the free/breather slots between them, in clock order. */
+export const dayPlanOn = (section, day, timetable) => {
+  const lectures = lecturesOn(section, day).map((lecture) => ({ ...lecture, free: false }));
+  return [...lectures, ...freeSlotsOn(section, day, timetable)].sort(
+    (a, b) => timeToMin(a.start) - timeToMin(b.start) || Number(a.free) - Number(b.free),
+  );
 };
 
 export const teacherKey = (name) => {
