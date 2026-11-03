@@ -1,0 +1,14 @@
+.assistant-wrap{max-width:900px;margin:0 auto;background:#fff;border:1px solid #e9ede7;border-radius:11px;overflow:hidden;box-shadow:var(--shadow)}
+.assistant-banner{display:flex;align-items:center;gap:10px;background:#f1f5eb;border-bottom:1px solid #e8eee4;padding:13px 16px}
+.assistant-banner>span:first-child{width:32px;height:32px;border-radius:9px;background:#e0edda;color:#39794f;display:grid;place-items:center}
+.assistant-banner>div{flex:1}.assistant-banner b{font-size:10px;display:block;color:#3f5945}.assistant-banner small{display:block;color:#89958b;font-size:9px;line-height:1.45;margin-top:3px}
+.offline-label{display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:8px;color:#638466}
+.chat-log{padding:19px;min-height:240px;max-height:52vh;overflow:auto;display:flex;flex-direction:column;gap:15px}
+.chat-message{display:flex;align-items:flex-start;gap:9px;max-width:86%}.chat-message.user-message{align-self:flex-end;flex-direction:row-reverse}
+.chat-avatar{width:27px;height:27px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;background:#eaf3e7;color:#417d55;font-size:8px;font-weight:700}.user-message .chat-avatar{background:#174c3d;color:#fff}
+.chat-bubble{background:#f5f7f3;padding:10px 12px;border-radius:3px 10px 10px 10px}.user-message .chat-bubble{background:#eaf3ec;border-radius:10px 3px 10px 10px}
+.chat-bubble p{font-size:10px;line-height:1.65;color:#526157;margin:0}.chat-bubble>a,.chat-bubble>button{display:inline-flex;align-items:center;gap:5px;background:transparent;color:#347750;border:0;padding:8px 0 0;font-size:9px;font-weight:700}
+.chat-form{display:flex;gap:8px;border-top:1px solid #edf0eb;padding:13px 15px}.chat-form input{min-width:0;flex:1;border:1px solid #e5eae3;border-radius:7px;padding:0 11px;outline:0;font-size:10px}.chat-form input:focus{border-color:#8bb594;box-shadow:0 0 0 2px #dceede}.chat-form .primary{width:39px;height:37px;padding:0}
+.suggested-questions{display:flex;align-items:center;gap:6px;overflow:auto;padding:0 15px 13px}.suggested-questions>span{font-size:7px;letter-spacing:1px;color:#9ba59c;margin-right:2px}.suggested-questions button{white-space:nowrap;border:1px solid #e8ece6;background:#fff;border-radius:15px;padding:6px 8px;color:#728076;font-size:8px}
+.suggested-questions button:hover{border-color:#bed3bf;color:#337550}.study-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.study-controls .pill-tabs{margin:0}
+@media(max-width:760px){.assistant-banner{align-items:flex-start;padding:11px}.offline-label{font-size:0}.offline-label svg{width:15px;height:15px}.chat-log{min-height:220px;padding:13px;max-height:49vh}.chat-message{max-width:94%}.chat-form{padding:10px}.study-controls{align-items:stretch;flex-direction:column}.study-controls .explore-search{width:100%}}
