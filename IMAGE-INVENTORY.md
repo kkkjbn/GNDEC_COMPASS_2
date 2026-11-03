@@ -68,7 +68,7 @@ The rest of the collection under `gndec-one/_research` and the top-level files i
 - `workshop.jpg`, `gndec_engine.jpg` and `_research/img/gndec_engine.jpg` are the **same workshop/engine photo**.
 - Room-to-building links are still inferred from room-code patterns, not surveyed door-by-door. The photos help recognition but do not prove indoor routes.
 - GNDEC gallery images are credited to the college's public gallery. Wikimedia Commons images are public domain or CC BY 2.0 as recorded in `commons/meta.json`. Re-check reuse permission before republishing outside this project.
-- `admissions.jpg` contains public admission phone numbers; it is kept out of the deployed app to avoid presenting stale contact details as current.
+- `admissions.jpg` contains public admission phone numbers; it is kept out of the deployed app to avoid presenting stale contact details as current. It does, however, place the admission office at Training & Placement, Seminar Hall, ground floor, PG Block — while the app’s map pin is an unverified Administration Block placeholder. Confirm this on site before trusting the pin.
 
 ## 6. What to collect next
 

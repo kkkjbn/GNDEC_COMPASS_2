@@ -4,7 +4,7 @@ This list covers information that was **not available in a sufficiently clear, c
 
 ## Best next information to collect
 
-1. **Admissions cell** — exact building, floor, room/counter number, entrance landmark, current visiting hours, phone/email and clear exterior/interior photos. Public sources did not establish a photo-guided route to the counter.
+1. **Admissions cell** — the 2026 public admission poster says the admission office is at **Training & Placement, Seminar Hall, ground floor, PG Block**, with `admission.gndec.ac.in` and public enquiry numbers. The app’s map pin is still an unverified Administration Block placeholder, so confirm the exact counter, entrance, visiting hours, phone/email and take clear exterior/interior photos before publishing a route.
 2. **Room-by-room routes** — confirm which building and floor every timetable room code belongs to, then record paths from the nearest gate, stairs/lift, corridor turns and destination door. Current block/floor values are inferred from room-code patterns (F/G/S) and timetable names, not independently surveyed.
 3. **Accessible paths** — step-free routes, ramps, lift locations, accessible washrooms, steep/blocked paths and which gates stay open. No verified accessible-route graph was found.
 4. **Current campus paths and distances** — walk the proposed routes and record distance, crossings, barriers, lighting and time. The app currently estimates from OSM geometry and labels the result approximate.
