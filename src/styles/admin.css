@@ -519,3 +519,137 @@
   gap: 18px;
   padding: 4px 0 10px;
 }
+
+/* Shared top-notice banner controls */
+
+.admin-banner {
+  margin-bottom: 14px;
+}
+
+.admin-banner-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.admin-banner-preview,
+.admin-banner-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-banner-preview {
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-3);
+}
+
+.admin-banner-sample {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--green-3);
+  border-radius: 8px;
+  background: var(--green-wash);
+}
+
+.admin-banner-sample b {
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.admin-banner-sample small {
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+.admin-banner-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.admin-banner-note {
+  margin: 0;
+  color: var(--green-2);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.admin-banner-duration {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-banner-duration input {
+  width: 92px;
+}
+
+.admin-banner-controls .admin-form-actions {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.admin-banner-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.admin-banner-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border: 1px solid var(--line-soft);
+  border-radius: 9px;
+  background: var(--paper-2);
+}
+
+.admin-banner-row > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-banner-row b {
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.admin-banner-row small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+@media (max-width: 900px) {
+  .admin-banner-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-banner-row {
+    flex-wrap: wrap;
+  }
+
+  .admin-banner-row > span {
+    flex-basis: 100%;
+  }
+}
+

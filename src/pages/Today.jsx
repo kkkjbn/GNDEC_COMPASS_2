@@ -2,29 +2,32 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
-  Bell,
   BookOpen,
   CalendarDays,
-  ChevronDown,
   Clock3,
   Coffee,
   Compass,
   ExternalLink,
-  FileText,
-  GraduationCap,
-  Info,
   MapPin,
   Navigation,
   Sparkles,
-  Users,
-  WifiOff,
 } from 'lucide-react';
-import { Link, useRouter } from '../lib/router.jsx';
+import { Link } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
-import { DAYS, DAYS_SHORT, branchShort, formatClock, greeting, longDate, dayIndexFor, dateKey } from '../lib/utils.js';
-import { findCurrentAndNext, findSection, isMentoringLecture, lecturesOn, nextClassTodayOrLater, personalizeSection, dayPlanOn } from '../lib/timetable.js';
+import { DAYS, DAYS_SHORT, formatClock, greeting, istDate, longDate, dayIndexFor, dateKey, timeToMin } from '../lib/utils.js';
+import {
+  COLLEGE_DAY_END_MINUTES,
+  dayPlanOn,
+  findCurrentAndNext,
+  findSection,
+  isMentoringLecture,
+  lecturesOn,
+  nextStudyDay,
+  nowNextThen,
+  personalizeSection,
+} from '../lib/timetable.js';
 import { findRoute } from '../lib/campus.js';
-import { Badge, DataFoot, Metric, PageHeader, Panel, PanelHead, RichText } from '../components/ui.jsx';
+import { Badge, DataFoot, Panel, PanelHead } from '../components/ui.jsx';
 import { useShell } from '../components/Shell.jsx';
 
 function minutesUntil(lecture, now) {
@@ -39,14 +42,54 @@ function minutesUntil(lecture, now) {
   return `in ${h}h${m ? ` ${m}m` : ''}`;
 }
 
-function NextClassCard({ section, now, compact = false }) {
+const cleanSubject = (value = '') => value.replace(/\s+[LTP]$/, '') || 'Class';
+
+function AgendaRow({ tag, lecture, empty, when, isNow = false }) {
+  if (!lecture) {
+    return (
+      <div className={`agenda-row ${isNow ? 'is-now' : ''} empty`}>
+        <span className="agenda-tag">{tag}</span>
+        <div className="agenda-main">
+          <b>{empty}</b>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className={`agenda-row ${isNow ? 'is-now' : ''}`}>
+      <span className="agenda-tag">{tag}</span>
+      <div className="agenda-main">
+        <b>{cleanSubject(lecture.subject)}</b>
+        <small>
+          <Clock3 size={11} /> {formatClock(lecture.start)}–{formatClock(lecture.end)}
+          <span>·</span>
+          {lecture.room || 'Room not listed'}
+        </small>
+      </div>
+      {when && <span className="agenda-when">{when}</span>}
+    </div>
+  );
+}
+
+/**
+ * Now / Next / Then card in the hero. After 5pm and on weekends it follows
+ * the old Compass behaviour and moves to the next study day.
+ */
+function AgendaCard({ section, now }) {
   const { data } = useApp();
-  const { current, next } = findCurrentAndNext(section, now, data?.timetable);
-  const later = !current && !next ? nextClassTodayOrLater(section, now) : null;
-  const lecture = current || next || later?.lecture;
+  const agenda = nowNextThen(section, now || new Date());
+  const { current, next, then, mode, nextDay } = agenda;
+  const focus = current || next;
+  const dayIndex = dayIndexFor(now);
+  const dayPlan = dayIndex >= 0 ? lecturesOn(section, dayIndex) : [];
+  const currentLectures = findCurrentAndNext(section, now, data?.timetable);
+  const progress = current
+    ? Math.max(0, Math.min(100, ((now.getHours() * 60 + now.getMinutes() - timeToMin(current.start)) / Math.max(1, timeToMin(current.end) - timeToMin(current.start))) * 100))
+    : 0;
+
   if (!section) {
     return (
-      <div className="next-class-card empty">
+      <div className="next-class-card agenda-card empty">
         <span className="next-label">YOUR TIMETABLE</span>
         <h3>Pick your section</h3>
         <p>Choose a section once and Compass keeps your day in view.</p>
@@ -56,48 +99,63 @@ function NextClassCard({ section, now, compact = false }) {
       </div>
     );
   }
-  if (!lecture) {
-    return (
-      <div className="next-class-card empty">
-        <span className="next-label">{DAYS[dayIndexFor(now)] || 'Sunday'}</span>
-        <h3>No classes left today</h3>
-        <p>{section.label} · check tomorrow or the full week.</p>
-        <Link to={`/timetable?section=${section.id}`} className="btn light small">
-          Open timetable <ArrowRight size={14} />
-        </Link>
-      </div>
-    );
-  }
-  const isNow = Boolean(current);
-  const dayName = later && !later.isToday ? DAYS[later.day] : null;
+
+  const nextDayLabel = nextDay ? `${DAYS[nextDay.day].slice(0, 3)} ${nextDay.date.getDate()}` : '';
+  const heading = current
+    ? 'IN CLASS NOW'
+    : nextDay
+      ? `NEXT STUDY DAY · ${nextDayLabel}`
+      : mode === 'finished'
+        ? 'CLASSES FINISHED'
+        : 'UP NEXT';
+  const nowEmpty =
+    mode === 'after-hours'
+      ? 'Classes are finished for today'
+      : mode === 'weekend'
+        ? 'It’s the weekend — no classes today'
+        : mode === 'finished'
+          ? 'No class right now'
+          : 'Free time right now';
+  const nextEmpty = nextDay ? 'No classes on the next study day' : 'Nothing else listed today';
+  const nextWhen = next ? (nextDay ? DAYS_SHORT[nextDay.day] : minutesUntil(next, now)) : '';
+  const thenWhen = then ? (nextDay ? DAYS_SHORT[nextDay.day] : minutesUntil(then, now)) : '';
+  const dayCopy = nextDay
+    ? `${DAYS[nextDay.day]} ${nextDay.date.getDate()} ${nextDay.date.toLocaleDateString('en-IN', { month: 'short' })}`
+    : currentLectures.current
+      ? `until ${formatClock(currentLectures.current.end)}`
+      : dayPlan.length
+        ? 'Today'
+        : '';
+
   return (
-    <div className={`next-class-card ${isNow ? 'live' : ''}`}>
+    <div className={`next-class-card agenda-card ${current ? 'live' : ''}`}>
       <div className="next-card-top">
         <span className="next-label">
-          <span className={`live-dot ${isNow ? 'on' : ''}`} />
-          {isNow ? 'IN CLASS NOW' : dayName ? `${dayName.toUpperCase()} · NEXT CLASS` : 'UP NEXT'}
+          <span className={`live-dot ${current ? 'on' : ''}`} />
+          {heading}
         </span>
-        <span className="next-time">{isNow ? `until ${formatClock(lecture.end)}` : minutesUntil(lecture, now)}</span>
+        <span className="next-time">{dayCopy}</span>
       </div>
-      <h3>{lecture.subject?.replace(/\s+[LTP]$/, '') || 'Class'}</h3>
-      <p className="next-meta">
-        <Clock3 size={14} /> {formatClock(lecture.start)}–{formatClock(lecture.end)}
-        <span>·</span>
-        <MapPin size={14} /> {lecture.room || 'Room not listed'}
-      </p>
-      {!compact && (
-        <p className="next-teacher">
-          {lecture.teacher || lecture.teachers?.join(', ') || 'Faculty not listed'} · {section.id}
-          {section.academicGroup ? ` · ${section.academicGroup}` : ''}
-        </p>
+
+      {current && (
+        <span className="agenda-progress" aria-hidden="true">
+          <i style={{ width: `${progress}%` }} />
+        </span>
       )}
+
+      <div className="agenda-list">
+        <AgendaRow tag="Now" lecture={current} empty={nowEmpty} isNow />
+        <AgendaRow tag="Next" lecture={next} empty={nextEmpty} when={nextWhen} />
+        <AgendaRow tag="Then" lecture={then} empty={then ? '' : 'Nothing else listed'} when={thenWhen} />
+      </div>
+
       <div className="next-actions">
-        <Link to={`/timetable?section=${section.id}`} className="btn light small">
+        <Link to={`/timetable?section=${section.id}${nextDay ? `&day=${nextDay.day}` : ''}`} className="btn light small">
           Full timetable
         </Link>
-        {lecture.room && (
-          <Link to={`/map?room=${encodeURIComponent(lecture.room)}`} className="next-route">
-            Route to room <ArrowUpRight size={13} />
+        {focus?.room && (
+          <Link to={`/map?room=${encodeURIComponent(focus.room)}`} className="next-route">
+            Route to {focus.room} <ArrowUpRight size={13} />
           </Link>
         )}
       </div>
@@ -107,13 +165,12 @@ function NextClassCard({ section, now, compact = false }) {
 
 export default function Today() {
   const { data, profile, online } = useApp();
-  const { navigate } = useRouter();
   const { openProfile } = useShell();
-  const [now, setNow] = useState(new Date());
-  const [day, setDay] = useState(() => Math.max(0, dayIndexFor(new Date())));
+  const [now, setNow] = useState(() => istDate());
+  const [manualDay, setManualDay] = useState(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 30000);
+    const timer = setInterval(() => setNow(istDate()), 30000);
     return () => clearInterval(timer);
   }, []);
 
@@ -123,8 +180,20 @@ export default function Today() {
   );
   const timetable = data?.timetable;
   const campus = data?.campus;
-  const lectures = useMemo(() => (day >= 0 ? lecturesOn(section, day) : []), [section, day]);
-  const dayPlan = useMemo(() => (day >= 0 ? dayPlanOn(section, day, timetable) : []), [section, day, timetable]);
+  const todayIndex = dayIndexFor(now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const afterCollegeHours = nowMinutes >= COLLEGE_DAY_END_MINUTES;
+  const currentToday = useMemo(
+    () => (section && todayIndex >= 0 ? lecturesOn(section, todayIndex).find((lecture) => timeToMin(lecture.start) <= nowMinutes && timeToMin(lecture.end) > nowMinutes) : null),
+    [section, todayIndex, nowMinutes],
+  );
+  const lookAheadDay = useMemo(
+    () => (section && (todayIndex < 0 || (afterCollegeHours && !currentToday)) ? nextStudyDay(section, now) : null),
+    [section, todayIndex, afterCollegeHours, currentToday, now],
+  );
+  const chosenDay = manualDay ?? lookAheadDay?.day ?? Math.max(0, todayIndex);
+  const lectures = useMemo(() => (chosenDay >= 0 ? lecturesOn(section, chosenDay) : []), [section, chosenDay]);
+  const dayPlan = useMemo(() => (chosenDay >= 0 ? dayPlanOn(section, chosenDay, timetable) : []), [section, chosenDay, timetable]);
   const breakCount = dayPlan.filter((item) => item.free).length;
   const notices = useMemo(
     () => [...(data?.notices?.notices || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 3),
@@ -136,16 +205,6 @@ export default function Today() {
     const today = dateKey(now);
     return (data?.notices?.holidays || []).filter((holiday) => holiday.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
   }, [data, now]);
-
-  const chosenDay = day;
-  const dateForDay = useMemo(() => {
-    const today = dayIndexFor(now);
-    if (today < 0) return null;
-    const diff = (chosenDay - today + 7) % 7;
-    const date = new Date(now);
-    date.setDate(date.getDate() + diff);
-    return date;
-  }, [chosenDay, now]);
 
   if (!data) return null;
 
@@ -208,15 +267,8 @@ export default function Today() {
               <small>EST. 1953 · CAMPUS GUIDE</small>
             </span>
           </span>
-          <NextClassCard section={section} now={now} />
+          <AgendaCard section={section} now={now} />
         </div>
-      </section>
-
-      <section className="metric-row">
-        <Metric icon={CalendarDays} value={stats.length} label="Timetable sections" tone="green" />
-        <Metric icon={Users} value={(data.students?.count || 0).toLocaleString('en-IN')} label="Students in public roster" tone="blue" onClick={() => navigate('/students')} />
-        <Metric icon={GraduationCap} value={data.faculty?.count || 0} label="Faculty profiles" tone="gold" onClick={() => navigate('/faculty')} />
-        <Metric icon={FileText} value={(data.papers?.count || 0).toLocaleString('en-IN')} label="Previous-year papers" tone="orange" onClick={() => navigate('/study?tab=papers')} />
       </section>
 
       <div className="today-grid">
@@ -224,7 +276,7 @@ export default function Today() {
           <PanelHead
             eyebrow="YOUR DAY"
             title={chosenDay === dayIndexFor(now) ? 'Today’s classes' : `${DAYS[chosenDay]}’s classes`}
-            description={section ? `${section.label}${section.academicGroup ? ` · ${section.academicGroup}` : ''} · ${lectures.length} ${lectures.length === 1 ? 'class' : 'classes'}${breakCount ? ` · ${breakCount} ${breakCount === 1 ? 'break' : 'breaks'}` : ''}` : 'Choose a section to see your classes'}
+            description={section ? `${section.label}${section.academicGroup ? ` · ${section.academicGroup}` : ''} · ${lectures.length} ${lectures.length === 1 ? 'class' : 'classes'}${breakCount ? ` · ${breakCount} ${breakCount === 1 ? 'break' : 'breaks'}` : ''}${lookAheadDay ? ` · ${DAYS[lookAheadDay.day]} ${lookAheadDay.date.getDate()} is the next study day` : ''}` : 'Choose a section to see your classes'}
             action={
               <Link to="/timetable" className="subtle-link">
                 Full week <ArrowRight size={14} />
@@ -243,7 +295,7 @@ export default function Today() {
                   type="button"
                   key={label}
                   className={`${chosenDay === index ? 'active' : ''} ${today === index ? 'today' : ''}`}
-                  onClick={() => setDay(index)}
+                  onClick={() => setManualDay(index)}
                 >
                   <small>{label}</small>
                   <b>{today >= 0 ? date.getDate() : index + 1}</b>
@@ -333,7 +385,7 @@ export default function Today() {
                   ? 'Saturday schedules change often. Check the official FET export before coming to campus.'
                   : 'This could be a free day, or the official timetable may have changed after the last data check.'}
               </p>
-              <button type="button" className="btn subtle" onClick={() => setDay(Math.max(0, dayIndexFor(now)))}>
+              <button type="button" className="btn subtle" onClick={() => setManualDay(null)}>
                 Back to today
               </button>
             </div>

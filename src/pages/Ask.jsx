@@ -27,6 +27,7 @@ import { Link, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
 import { answerQuestion, ASSISTANT_STARTERS, assistantSuggestions } from '../lib/assistant.js';
 import { findSection } from '../lib/timetable.js';
+import { istDateTimeLabel } from '../lib/utils.js';
 import { Avatar, Badge, CopyButton, InlineNotice, Modal, RichText } from '../components/ui.jsx';
 
 const ACTION_ICONS = {
@@ -93,8 +94,15 @@ function Message({ message, onAsk, onNavigate }) {
   if (message.role === 'user') {
     return (
       <div className="chat-message user">
-        <div className="chat-bubble user-bubble">
-          <p>{message.text}</p>
+        <div className="chat-user-stack">
+          <div className="chat-bubble user-bubble">
+            <p>{message.text}</p>
+          </div>
+          {message.ts ? (
+            <time className="chat-time" dateTime={new Date(message.ts).toISOString()}>
+              {istDateTimeLabel(message.ts)}
+            </time>
+          ) : null}
         </div>
       </div>
     );
@@ -112,6 +120,11 @@ function Message({ message, onAsk, onNavigate }) {
           <CopyButton value={message.text || answer.text} label="" className="chat-copy" />
         </div>
         <RichText text={message.text || answer.text} />
+        {message.ts ? (
+          <time className="chat-time" dateTime={new Date(message.ts).toISOString()}>
+            {istDateTimeLabel(message.ts)}
+          </time>
+        ) : null}
         {answer.matches?.length > 0 && (
           <div className="chat-matches">
             {answer.matches.map((match) => (

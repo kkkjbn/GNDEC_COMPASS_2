@@ -1,9 +1,18 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "gndec-compass-v2",
+  "main": "worker/index.js",
   "compatibility_date": "2026-11-03",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "kv_namespaces": [
+    {
+      "binding": "COMPASS_V2_KV",
+      "id": "43654685840a4e2fb6c9a66671828fca"
+    }
+  ]
 }

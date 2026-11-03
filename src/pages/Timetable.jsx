@@ -21,6 +21,7 @@ import {
   branchShort,
   dayIndexFor,
   formatClock,
+  istDate,
   norm,
   timeToMin,
   yearLabel,
@@ -107,7 +108,7 @@ function SectionSelect({ value, onChange, includeGroup = false, label = 'Section
 function WeekGrid({ lectures, onSelect, showSection = false, timetable }) {
   const periods = timetable?.periods || ['08:30', '09:30', '10:30', '11:30', '12:30', '13:30', '14:30', '15:30'];
   const find = (day, period) => (lectures || []).find((lecture) => lecture.day === day && lecture.period === period);
-  const now = new Date();
+  const now = istDate();
   const today = dayIndexFor(now);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const currentPeriod = periodForMinutes(timetable, nowMinutes);
@@ -270,12 +271,12 @@ export default function Timetable() {
   const { searchParams, navigate } = useRouter();
   const timetable = data?.timetable;
   const [selected, setSelected] = useState(null);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useState(() => istDate());
   const [roomQuery, setRoomQuery] = useState('');
   const [blockFilter, setBlockFilter] = useState('all');
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 30000);
+    const timer = setInterval(() => setNow(istDate()), 30000);
     return () => clearInterval(timer);
   }, []);
 
@@ -294,7 +295,7 @@ export default function Timetable() {
   );
   const [day, setDay] = useState(() => {
     const requested = Number(searchParams.get('day'));
-    return Number.isInteger(requested) && requested >= 0 && requested <= 5 ? requested : Math.max(0, dayIndexFor(new Date()));
+    return Number.isInteger(requested) && requested >= 0 && requested <= 5 ? requested : Math.max(0, dayIndexFor(istDate()));
   });
   const teacher = teacherQuery ? teacherQuery : '';
 

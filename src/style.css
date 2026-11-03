@@ -5,33 +5,33 @@
 
 :root {
   color-scheme: light;
-  --bg: #f3eee2;
-  --bg-deep: #eae3d2;
-  --paper: #fbf8f0;
-  --paper-2: #fffdf8;
-  --paper-3: #f7f2e6;
-  --ink: #1c2a24;
-  --ink-soft: #39463f;
-  --muted: #727b73;
-  --muted-2: #8d958d;
-  --line: #ded5c0;
-  --line-soft: #ece5d5;
-  --green: #14483a;
-  --green-2: #1e604c;
-  --green-3: #2d7a62;
-  --green-ink: #0c3428;
-  --green-wash: #e3ece3;
-  --terra: #bd6a3d;
-  --terra-soft: #f3e0d2;
-  --gold: #b08a34;
-  --gold-soft: #f1e7c8;
-  --blue: #3f5e9e;
-  --blue-soft: #e1e7f4;
-  --red: #b1493f;
-  --red-soft: #f4dfdb;
-  --shadow-sm: 0 1px 2px rgba(44, 39, 29, 0.06), 0 2px 8px rgba(44, 39, 29, 0.04);
-  --shadow-md: 0 10px 30px -18px rgba(38, 32, 22, 0.35), 0 2px 8px rgba(38, 32, 22, 0.05);
-  --shadow-lg: 0 30px 70px -40px rgba(30, 25, 16, 0.5), 0 8px 24px -16px rgba(30, 25, 16, 0.24);
+  --bg: #f4f6f3;
+  --bg-deep: #e9edea;
+  --paper: #ffffff;
+  --paper-2: #ffffff;
+  --paper-3: #f1f5f2;
+  --ink: #15221c;
+  --ink-soft: #36473f;
+  --muted: #67766f;
+  --muted-2: #8b9891;
+  --line: #dfe6e1;
+  --line-soft: #edf2ee;
+  --green: #0d3a2c;
+  --green-2: #12624a;
+  --green-3: #1c8160;
+  --green-ink: #062219;
+  --green-wash: #e6f2eb;
+  --terra: #a9633f;
+  --terra-soft: #f3e6dd;
+  --gold: #9a7a2f;
+  --gold-soft: #f4eeda;
+  --blue: #3f619c;
+  --blue-soft: #e6ecf7;
+  --red: #b04b41;
+  --red-soft: #f6e4e1;
+  --shadow-sm: 0 1px 2px rgba(20, 34, 27, 0.05), 0 2px 8px rgba(20, 34, 27, 0.04);
+  --shadow-md: 0 10px 30px -18px rgba(16, 28, 22, 0.28), 0 2px 8px rgba(16, 28, 22, 0.05);
+  --shadow-lg: 0 30px 70px -40px rgba(12, 22, 17, 0.4), 0 8px 24px -16px rgba(12, 22, 17, 0.18);
   --radius-sm: 9px;
   --radius: 14px;
   --radius-lg: 22px;
@@ -45,30 +45,30 @@
 
 [data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0f1612;
-  --bg-deep: #0b110e;
-  --paper: #17211b;
-  --paper-2: #1b2720;
-  --paper-3: #131c17;
-  --ink: #edf0e6;
-  --ink-soft: #ccd4ca;
-  --muted: #9aa69a;
-  --muted-2: #7e8a80;
-  --line: #2c3a31;
-  --line-soft: #233029;
-  --green: #1b5a47;
-  --green-2: #2a745c;
-  --green-3: #3f9678;
-  --green-ink: #07110d;
-  --green-wash: #1c2c24;
-  --terra: #d8895c;
-  --terra-soft: #33251d;
-  --gold: #d3ad58;
-  --gold-soft: #2f2a1c;
-  --blue: #7f9bd1;
-  --blue-soft: #1d2739;
-  --red: #e08074;
-  --red-soft: #38221f;
+  --bg: #0b110e;
+  --bg-deep: #070b09;
+  --paper: #121a16;
+  --paper-2: #16211c;
+  --paper-3: #0f1713;
+  --ink: #eef3ee;
+  --ink-soft: #cad5ce;
+  --muted: #98a69e;
+  --muted-2: #7a887f;
+  --line: #28362f;
+  --line-soft: #1f2a24;
+  --green: #1c5c46;
+  --green-2: #2b8165;
+  --green-3: #47a686;
+  --green-ink: #06130e;
+  --green-wash: #182a22;
+  --terra: #d98f65;
+  --terra-soft: #2f231d;
+  --gold: #cfae63;
+  --gold-soft: #2b271b;
+  --blue: #86a2d8;
+  --blue-soft: #1b2537;
+  --red: #e18478;
+  --red-soft: #34211e;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
   --shadow-md: 0 14px 34px -20px rgba(0, 0, 0, 0.7);
   --shadow-lg: 0 34px 80px -44px rgba(0, 0, 0, 0.85);
@@ -105,14 +105,14 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(900px 500px at 78% -10%, rgba(189, 106, 61, 0.1), transparent 65%),
-    radial-gradient(700px 460px at 0% 100%, rgba(20, 72, 58, 0.09), transparent 65%);
+    radial-gradient(900px 500px at 78% -10%, rgba(28, 129, 96, 0.07), transparent 65%),
+    radial-gradient(700px 460px at 0% 100%, rgba(63, 97, 156, 0.06), transparent 70%);
 }
 
 [data-theme='dark'] body::before {
   background:
-    radial-gradient(900px 500px at 78% -10%, rgba(216, 137, 92, 0.07), transparent 65%),
-    radial-gradient(700px 460px at 0% 100%, rgba(63, 150, 120, 0.08), transparent 65%);
+    radial-gradient(900px 500px at 78% -10%, rgba(71, 166, 134, 0.06), transparent 65%),
+    radial-gradient(700px 460px at 0% 100%, rgba(134, 162, 216, 0.05), transparent 70%);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -1611,9 +1611,9 @@ button.metric:hover {
   padding: 22px 18px 18px;
   overflow-y: auto;
   background:
-    radial-gradient(340px 260px at 20% 0%, rgba(89, 151, 122, 0.22), transparent 70%),
-    radial-gradient(280px 220px at 100% 100%, rgba(189, 106, 61, 0.14), transparent 70%),
-    linear-gradient(180deg, #123f33, #0c2f26 58%, #09251e);
+    radial-gradient(340px 260px at 20% 0%, rgba(94, 170, 143, 0.18), transparent 70%),
+    radial-gradient(280px 220px at 100% 100%, rgba(83, 120, 180, 0.12), transparent 70%),
+    linear-gradient(180deg, #10382c, #0b2b22 58%, #08221a);
   color: #dce6da;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
@@ -1665,7 +1665,7 @@ button.metric:hover {
 
 .brand-text em {
   font-style: italic;
-  color: #e5bd84;
+  color: #cfe6d9;
 }
 
 .brand-text small {
@@ -2222,7 +2222,7 @@ button.metric:hover {
 }
 
 [data-theme='dark'] .hero-copy h1 em {
-  color: #dfb37a;
+  color: var(--green-3);
 }
 
 .hero-lede {
@@ -2279,7 +2279,7 @@ button.metric:hover {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(7, 31, 24, 0.04) 26%, rgba(7, 31, 24, 0.62) 100%);
+  background: linear-gradient(180deg, rgba(7, 27, 21, 0.02) 24%, rgba(7, 24, 19, 0.66) 100%);
 }
 
 .hero-photo-tag {
@@ -2310,7 +2310,7 @@ button.metric:hover {
   gap: 8px;
   padding: 7px 10px;
   border-radius: 10px;
-  background: rgba(250, 243, 226, 0.92);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
   color: var(--green-ink);
   box-shadow: var(--shadow-sm);
 }
@@ -2343,10 +2343,10 @@ button.metric:hover {
   z-index: 2;
   padding: 16px 17px;
   border-radius: var(--radius);
-  background: rgba(248, 243, 231, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: color-mix(in srgb, var(--paper) 96%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
   box-shadow: 0 18px 36px -22px rgba(5, 25, 19, 0.7);
-  color: var(--green-ink);
+  color: var(--ink);
   backdrop-filter: blur(12px);
 }
 
@@ -2403,7 +2403,7 @@ button.metric:hover {
 
 .next-class-card.empty p {
   margin-top: 5px;
-  color: #5e6a60;
+  color: var(--muted);
   font-size: 11.5px;
 }
 
@@ -2417,14 +2417,128 @@ button.metric:hover {
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 5px;
-  color: #4d5a50;
+  color: var(--muted);
   font-size: 11px;
 }
 
 .next-teacher {
   margin-top: 3px;
-  color: #6b776c;
+  color: var(--muted);
   font-size: 10.5px;
+}
+
+/* Now / Next / Then agenda inside the hero media card. */
+.agenda-card {
+  padding: 13px 14px 12px;
+}
+
+.agenda-card .next-time {
+  white-space: nowrap;
+}
+
+.agenda-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 7px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.agenda-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.agenda-row:last-child {
+  border-bottom: 0;
+}
+
+.agenda-row.is-now {
+  margin: 0 -6px;
+  padding: 6px;
+  border-radius: 8px;
+  border-bottom-color: transparent;
+  background: var(--green-wash);
+}
+
+.agenda-row.is-now + .agenda-row {
+  border-top: 1px solid var(--line-soft);
+}
+
+.agenda-tag {
+  color: var(--muted-2);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.agenda-row.is-now .agenda-tag {
+  color: var(--green-2);
+}
+
+.agenda-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.agenda-main b {
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agenda-main small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 9.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agenda-main small span {
+  color: var(--muted-2);
+}
+
+.agenda-row.empty .agenda-main b {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 550;
+}
+
+.agenda-when {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.agenda-progress {
+  display: block;
+  height: 3px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--terra) 20%, var(--line-soft));
+  overflow: hidden;
+}
+
+.agenda-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--terra);
+  transition: width 0.4s var(--ease);
 }
 
 .next-actions {

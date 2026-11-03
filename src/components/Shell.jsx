@@ -26,6 +26,7 @@ import { useApp } from '../context.jsx';
 import { findSection } from '../lib/timetable.js';
 import { CommandSearch } from './CommandSearch.jsx';
 import { ProfileDialog } from './ProfileDialog.jsx';
+import { CampusBanner } from './CampusBanner.jsx';
 import { Avatar, Toasts } from './ui.jsx';
 
 const ShellContext = createContext(null);
@@ -356,6 +357,7 @@ export function Shell({ children }) {
         <Sidebar onProfile={() => setProfileOpen(true)} />
         <div className="app-body">
           <Topbar onSearch={() => setSearchOpen(true)} onProfile={() => setProfileOpen(true)} onMore={() => setMoreOpen(true)} />
+          <CampusBanner />
           <main className="page">{children}</main>
           <Footer />
         </div>

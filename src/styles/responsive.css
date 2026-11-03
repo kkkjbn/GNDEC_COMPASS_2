@@ -166,7 +166,8 @@
     box-shadow: 0 -10px 30px -22px rgba(24, 34, 26, 0.4);
   }
 
-  .mobile-nav a {
+  .mobile-nav a,
+  .mobile-nav > button {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -175,14 +176,23 @@
     gap: 2px;
     flex: 1;
     min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
     border-radius: 10px;
+    background: none;
     color: var(--muted);
+    font-family: inherit;
     font-size: 9px;
     font-weight: 650;
     letter-spacing: 0.01em;
+    line-height: 1.3;
+    text-align: center;
+    appearance: none;
   }
 
-  .mobile-nav a svg {
+  .mobile-nav a svg,
+  .mobile-nav > button svg {
     color: var(--muted-2);
   }
 
@@ -208,11 +218,17 @@
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: var(--terra);
+    background: var(--gold);
   }
 
-  .mobile-nav a:active {
+  .mobile-nav a:active,
+  .mobile-nav > button:active {
     transform: scale(0.97);
+  }
+
+  .mobile-nav > button:hover,
+  .mobile-nav > button:focus-visible {
+    background: var(--paper-3);
   }
 
   /* Two- and three-column content becomes stacked or narrower. */

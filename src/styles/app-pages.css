@@ -160,6 +160,26 @@
   border-radius: 13px;
 }
 
+.chat-user-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 78%;
+}
+
+.chat-user-stack .chat-bubble {
+  max-width: 100%;
+}
+
+.chat-time {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted-2);
+  font-size: 10px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
 .user-bubble {
   background: var(--green);
   color: #fbf5e7;
@@ -1333,7 +1353,7 @@
 
 .about-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 9px;
   margin-bottom: 20px;
 }

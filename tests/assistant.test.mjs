@@ -22,7 +22,7 @@ const data = {
 };
 
 const profile = { name: 'Kaushik Jain', crn: '2617070', sectionId: 'ECB' };
-const now = new Date(2026, 10, 3, 15, 30, 0);
+const now = new Date('2026-11-03T15:30:00+05:30');
 const ask = (query) => answerQuestion(query, { data, profile, memory: {}, now });
 
 const cases = [
@@ -77,4 +77,31 @@ test('assistant personalizes a first-year timetable with the mentoring group', (
   assert.match(answer.text, /ECBM1/);
   assert.match(answer.text, /Dr\. Chahat Jain/);
   assert.match(answer.text, /G6/);
+});
+
+test('assistant resolves relative days with typos and IST dates', () => {
+  const variants = ['csd2 tomorrow', 'csd2 tommorow', 'csd2 tommorrow', 'csd2 tomorow', 'csd2 kal'];
+  for (const query of variants) {
+    const answer = answerQuestion(query, { data, profile: {}, memory: {}, now });
+    assert.equal(answer.intent, 'timetable', `${query} → ${answer.intent}: ${answer.text}`);
+    assert.match(answer.text, /Wednesday · 2026-11-04/, query);
+    assert.match(answer.text, /CHEMISTRY L[\s\S]*F114[\s\S]*Dr\. Amandeep Kaur/, query);
+    assert.match(answer.text, /BASIC ELECTRICAL AND ELECTRONICS ENGINEERING L[\s\S]*F108/, query);
+  }
+});
+
+test('assistant calendar rolls over on IST midnight, not device midnight', () => {
+  // 19:00 UTC on 3 Nov is 00:30 IST on 4 Nov.
+  const afterIstMidnight = new Date('2026-11-03T19:00:00Z');
+  const answer = answerQuestion('csd2 today', { data, profile: {}, memory: {}, now: afterIstMidnight });
+  assert.equal(answer.intent, 'timetable');
+  assert.match(answer.text, /Wednesday · 2026-11-04/);
+});
+
+test('assistant reports the current time in IST', () => {
+  const answer = answerQuestion('what time is it', { data, profile: {}, memory: {}, now: new Date('2026-11-03T17:31:00Z') });
+  assert.equal(answer.intent, 'time');
+  assert.match(answer.text, /11:01 PM IST/);
+  assert.match(answer.text, /Tuesday, 03 November 2026/);
+  assert.match(answer.text, /Timetable day: \*\*Tuesday\*\*/);
 });

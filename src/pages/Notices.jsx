@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Link, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
-import { dateKey, dateTimeLabel, parseDate, relativeDay, sortByDateDesc } from '../lib/utils.js';
+import { dateKey, dateTimeLabel, istDate, parseDate, relativeDay, sortByDateDesc } from '../lib/utils.js';
 import {
   Badge,
   DataFoot,
@@ -90,7 +90,7 @@ export default function Notices() {
     );
   }, [notices, exams, tab, query]);
 
-  const today = dateKey(new Date());
+  const today = dateKey(istDate());
   const upcomingHolidays = useMemo(
     () => holidays.filter((holiday) => holiday.date >= today).sort((a, b) => a.date.localeCompare(b.date)),
     [holidays, today],

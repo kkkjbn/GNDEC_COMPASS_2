@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -20,8 +20,18 @@ import {
 } from 'lucide-react';
 import { Link } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
-import { downloadJson, norm } from '../lib/utils.js';
+import { downloadJson, istDate, norm } from '../lib/utils.js';
 import { subgroupList } from '../lib/timetable.js';
+import {
+  DEFAULT_BANNER_CONFIG,
+  currentTopNotice,
+  eligibleTopNotices,
+  fetchBannerConfig,
+  readBannerConfig,
+  resetBannerConfig,
+  saveBannerConfig,
+  writeBannerConfig,
+} from '../lib/banner.js';
 import {
   Badge,
   DataFoot,
@@ -35,6 +45,7 @@ import {
 
 const ADMIN_HASH = 'e2f527cd57b562ce5917e90f32d6814efd332d8e702ebf23dff1165dd80549cc';
 const UNLOCK_KEY = 'compass2.adminUnlocked';
+const ADMIN_HASH_KEY = 'compass2.adminHash';
 
 const VALIDATION_RECORDS = [
   { crn: '2617070', name: 'Kaushik Jain', section: 'ECB', subsection: 'ECB1', branch: 'EC' },
@@ -69,6 +80,7 @@ function Gate({ onUnlock }) {
     if (hash && hash === ADMIN_HASH) {
       try {
         sessionStorage.setItem(UNLOCK_KEY, '1');
+        sessionStorage.setItem(ADMIN_HASH_KEY, hash);
       } catch {
         /* session storage can be disabled */
       }
@@ -177,6 +189,13 @@ export default function Admin() {
       return false;
     }
   });
+  const [adminHash] = useState(() => {
+    try {
+      return sessionStorage.getItem(ADMIN_HASH_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
 
   if (!unlocked) return <Gate onUnlock={() => setUnlocked(true)} />;
   if (!data) return null;
@@ -191,9 +210,11 @@ export default function Admin() {
       toast={toast}
       prepareOffline={prepareOffline}
       cacheState={cacheState}
+      adminHash={adminHash}
       onLock={() => {
         try {
           sessionStorage.removeItem(UNLOCK_KEY);
+          sessionStorage.removeItem(ADMIN_HASH_KEY);
         } catch {
           /* session storage can be disabled */
         }
@@ -203,7 +224,7 @@ export default function Admin() {
   );
 }
 
-function AdminStudio({ data, reload, online, overrides, setOverrides, toast, prepareOffline, cacheState, onLock }) {
+function AdminStudio({ data, reload, online, overrides, setOverrides, toast, prepareOffline, cacheState, adminHash, onLock }) {
   const [roomQuery, setRoomQuery] = useState('');
   const [selectedRoomId, setSelectedRoomId] = useState('');
   const [roomDraft, setRoomDraft] = useState({ block: '', floor: '', floorNo: '', placeId: '', kind: 'classroom' });
@@ -211,6 +232,109 @@ function AdminStudio({ data, reload, online, overrides, setOverrides, toast, pre
   const [placeDraft, setPlaceDraft] = useState({ name: '', category: '', description: '', verified: false, lat: '', lon: '', x: '', y: '' });
   const [importText, setImportText] = useState('');
   const fileRef = useRef(null);
+  const [bannerConfig, setBannerConfig] = useState(() => readBannerConfig());
+  const [durationDraft, setDurationDraft] = useState(() => String(readBannerConfig().durationDays));
+  const [bannerBusy, setBannerBusy] = useState(false);
+  const [bannerNote, setBannerNote] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    fetchBannerConfig().then((next) => {
+      if (active && next) {
+        setBannerConfig(next);
+        setDurationDraft(String(next.durationDays));
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setDurationDraft(String(bannerConfig.durationDays));
+  }, [bannerConfig.durationDays]);
+
+  const recentNotices = useMemo(
+    () =>
+      [...(data.notices?.notices || [])]
+        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+        .slice(0, 10),
+    [data],
+  );
+  const activeTopNotice = currentTopNotice(data.notices?.notices || [], bannerConfig, istDate());
+  const eligibleNotices = eligibleTopNotices(data.notices?.notices || [], bannerConfig, istDate());
+
+  const persistBanner = async (patch, message) => {
+    const next = { ...bannerConfig, ...patch };
+    setBannerBusy(true);
+    setBannerNote('');
+    try {
+      const saved = await saveBannerConfig(next, adminHash);
+      setBannerConfig(saved);
+      setBannerNote('Shared banner updated. Every visitor will see this on their next page load.');
+      toast(message, 'success');
+    } catch (error) {
+      const local = writeBannerConfig(next);
+      setBannerConfig(local);
+      setBannerNote(`Saved on this device only — ${error.message}`);
+      toast('The shared banner API did not accept the change; saved locally instead.', 'error');
+    } finally {
+      setBannerBusy(false);
+    }
+  };
+
+  const saveDuration = () => {
+    const days = Math.max(1, Math.min(14, Math.round(Number(durationDraft) || DEFAULT_BANNER_CONFIG.durationDays)));
+    persistBanner({ durationDays: days }, `Top notices now stay for ${days} ${days === 1 ? 'day' : 'days'}.`);
+  };
+
+  const toggleHiddenAll = () =>
+    persistBanner(
+      { hiddenAll: !bannerConfig.hiddenAll },
+      bannerConfig.hiddenAll ? 'Top notice banner restored for everyone.' : 'Top notice banner hidden for everyone.',
+    );
+
+  const hideCurrentNotice = () => {
+    if (!activeTopNotice) return;
+    persistBanner(
+      {
+        hiddenAll: false,
+        hiddenNoticeIds: [...new Set([...(bannerConfig.hiddenNoticeIds || []), activeTopNotice.id])],
+      },
+      'That notice is removed from the top banner for everyone.',
+    );
+  };
+
+  const toggleNoticeHidden = (notice) => {
+    const hidden = (bannerConfig.hiddenNoticeIds || []).includes(notice.id);
+    persistBanner(
+      {
+        hiddenAll: false,
+        hiddenNoticeIds: hidden
+          ? (bannerConfig.hiddenNoticeIds || []).filter((id) => id !== notice.id)
+          : [...new Set([...(bannerConfig.hiddenNoticeIds || []), notice.id])],
+      },
+      hidden ? 'Notice restored to the top banner.' : 'Notice hidden from the top banner.',
+    );
+  };
+
+  const resetBanner = async () => {
+    setBannerBusy(true);
+    setBannerNote('');
+    try {
+      const saved = await resetBannerConfig(adminHash);
+      setBannerConfig(saved);
+      setBannerNote('Banner settings reset to the default 3-day window.');
+      toast('Top notice settings reset for everyone.', 'success');
+    } catch (error) {
+      const local = writeBannerConfig(DEFAULT_BANNER_CONFIG);
+      setBannerConfig(local);
+      setBannerNote(`Reset on this device only — ${error.message}`);
+      toast('Could not reset the shared banner; reset locally.', 'error');
+    } finally {
+      setBannerBusy(false);
+    }
+  };
 
   const rooms = data.rooms?.rooms || [];
   const places = data.campus?.places || [];
@@ -555,6 +679,98 @@ function AdminStudio({ data, reload, online, overrides, setOverrides, toast, pre
           <span>data refresh</span>
         </div>
       </div>
+
+      <Panel className="admin-banner">
+        <PanelHead
+          eyebrow="TOP NOTICE BANNER"
+          title="Control the campus-wide notice strip"
+          description="A newly published GNDEC notice appears at the top of every page for a short window, and also stays in the normal notice list. Changes here are saved to the shared Worker KV store."
+          action={
+            <Badge tone={bannerConfig.hiddenAll ? 'neutral' : activeTopNotice ? 'green' : 'gold'}>
+              {bannerConfig.hiddenAll ? 'Hidden for everyone' : activeTopNotice ? 'Live for everyone' : 'Nothing in window'}
+            </Badge>
+          }
+        />
+        <div className="admin-banner-grid">
+          <div className="admin-banner-preview">
+            <span className="eyebrow">WHAT VISITORS SEE NOW</span>
+            {bannerConfig.hiddenAll ? (
+              <p className="admin-banner-empty">The top notice banner is hidden for every visitor. The normal Notices page still lists every notice.</p>
+            ) : activeTopNotice ? (
+              <div className="admin-banner-sample">
+                <b>{activeTopNotice.title}</b>
+                <small>
+                  {activeTopNotice.displayDate || activeTopNotice.date} · {activeTopNotice.source || 'Official notice'}
+                </small>
+              </div>
+            ) : (
+              <p className="admin-banner-empty">
+                No notice is inside the {bannerConfig.durationDays}-day window today. A notice dated today appears immediately.
+              </p>
+            )}
+            <p className="fine-print">
+              {eligibleNotices.length} notice{eligibleNotices.length === 1 ? '' : 's'} inside the window · {bannerConfig.hiddenNoticeIds?.length || 0} hidden individually · window{' '}
+              {bannerConfig.durationDays} day{bannerConfig.durationDays === 1 ? '' : 's'}
+            </p>
+            {bannerNote && <p className="admin-banner-note">{bannerNote}</p>}
+          </div>
+
+          <div className="admin-banner-controls">
+            <label className="field">
+              <span>Display duration (days)</span>
+              <div className="admin-banner-duration">
+                <input
+                  type="number"
+                  min="1"
+                  max="14"
+                  value={durationDraft}
+                  onChange={(event) => setDurationDraft(event.target.value)}
+                />
+                <button type="button" className="btn secondary" onClick={saveDuration} disabled={bannerBusy}>
+                  Save duration
+                </button>
+              </div>
+            </label>
+            <div className="admin-form-actions">
+              <button type="button" className="btn primary" onClick={hideCurrentNotice} disabled={bannerBusy || !activeTopNotice}>
+                <Trash2 size={14} /> Remove current notice for everyone
+              </button>
+              <button type="button" className="btn secondary" onClick={toggleHiddenAll} disabled={bannerBusy}>
+                {bannerConfig.hiddenAll ? 'Restore banner for everyone' : 'Hide whole banner for everyone'}
+              </button>
+              <button type="button" className="btn ghost" onClick={resetBanner} disabled={bannerBusy}>
+                <RotateCcw size={14} /> Reset to 3 days
+              </button>
+            </div>
+            <p className="fine-print">
+              Admin writes need the Worker secret <code>ADMIN_PASSCODE_HASH</code>. If the API is unavailable, the change is kept on this
+              device and the reason is shown above.
+            </p>
+          </div>
+        </div>
+
+        <div className="admin-banner-list">
+          <span className="eyebrow">RECENT NOTICES</span>
+          {recentNotices.map((notice) => {
+            const hidden = (bannerConfig.hiddenNoticeIds || []).includes(notice.id);
+            const inWindow = eligibleNotices.some((item) => item.id === notice.id);
+            return (
+              <div className="admin-banner-row" key={notice.id}>
+                <span>
+                  <b>{notice.title}</b>
+                  <small>
+                    {notice.displayDate || notice.date} · {notice.source || 'Notice'}
+                  </small>
+                </span>
+                <Badge tone={hidden ? 'neutral' : inWindow ? 'green' : 'gold'}>{hidden ? 'Hidden' : inWindow ? 'In window' : 'Expired'}</Badge>
+                <button type="button" className="btn ghost small" onClick={() => toggleNoticeHidden(notice)} disabled={bannerBusy}>
+                  {hidden ? 'Restore' : 'Remove from top'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </Panel>
 
       <div className="admin-grid">
         <Panel className="admin-health">

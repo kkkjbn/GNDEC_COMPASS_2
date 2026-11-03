@@ -387,6 +387,60 @@ export const nextClassTodayOrLater = (section, now = new Date()) => {
   return null;
 };
 
+/** Legacy GNDEC goes home live at 5pm, and the day view looks ahead. */
+export const COLLEGE_DAY_END_MINUTES = 17 * 60;
+
+/**
+ * First scheduled study day after `now` (tomorrow onward) that has at least
+ * one class for this section. Sunday is skipped because dayIndexFor is -1.
+ */
+export const nextStudyDay = (section, now = new Date(), includeToday = false) => {
+  for (let offset = includeToday ? 0 : 1; offset <= 14; offset += 1) {
+    const date = new Date(now);
+    date.setDate(date.getDate() + offset);
+    const day = dayIndexFor(date);
+    if (day < 0) continue;
+    if (lecturesOn(section, day).length) return { day, date, offset };
+  }
+  return null;
+};
+
+/**
+ * The Now / Next / Then agenda used by Today.
+ *
+ * Matches the old Compass behaviour: during the college day it only looks
+ * inside today; after 5pm (or on a weekend) it moves to the next study day
+ * and shows that day's first two classes.
+ */
+export const nowNextThen = (section, now = new Date()) => {
+  if (!section) return { mode: 'empty', current: null, next: null, then: null, day: -1, nextDay: null };
+  const day = dayIndexFor(now);
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const todayLectures = day >= 0 ? lecturesOn(section, day) : [];
+  const current = todayLectures.find((lecture) => timeToMin(lecture.start) <= minutes && timeToMin(lecture.end) > minutes) || null;
+  const upcoming = todayLectures.filter((lecture) => timeToMin(lecture.start) > minutes);
+  const afterCollegeHours = minutes >= COLLEGE_DAY_END_MINUTES;
+
+  if (current) {
+    return { mode: 'now', current, next: upcoming[0] || null, then: upcoming[1] || null, day, nextDay: null };
+  }
+
+  if (day >= 0 && !afterCollegeHours && upcoming.length) {
+    return { mode: 'today', current: null, next: upcoming[0], then: upcoming[1] || null, day, nextDay: null };
+  }
+
+  const upcomingDay = nextStudyDay(section, now);
+  const nextDayLectures = upcomingDay ? lecturesOn(section, upcomingDay.day) : [];
+  return {
+    mode: day < 0 ? 'weekend' : afterCollegeHours ? 'after-hours' : 'finished',
+    current: null,
+    next: nextDayLectures[0] || null,
+    then: nextDayLectures[1] || null,
+    day,
+    nextDay: upcomingDay,
+  };
+};
+
 export const freePeriods = (section, day, timetable = null) => {
   const periods = timetable?.periods || [];
   const lectures = lecturesOn(section, day);

@@ -1,9 +1,12 @@
 import {
   DAYS,
   branchShort,
+  clockLabel,
   dateKey,
   dayIndexFor,
   formatClock,
+  istDate,
+  longDate,
   norm,
   personKey,
   personTokens,
@@ -500,17 +503,27 @@ function findPaperSubject(nq, data) {
   return { code: scored[0].paper.code, papers: scored.map((entry) => entry.paper) };
 }
 
+const isTomorrowWord = (word = '') =>
+  word === 'kal' || word === 'tmrw' || word === 'tmr' || word === 'tomo' || /^tom+m?o?r+o?w+$/.test(word);
+
 function detectDay(nq, now) {
   const date = new Date(now);
-  if (nq.includes('day after tomorrow') || nq.includes('parso')) {
+  const words = String(nq || '').split(/\s+/).filter(Boolean);
+  const tomorrowAt = words.findIndex(isTomorrowWord);
+  const dayAfterTomorrow =
+    words.includes('parso') ||
+    words.includes('parson') ||
+    nq.includes('day after tomorrow') ||
+    (tomorrowAt >= 0 && words[tomorrowAt - 1] === 'after');
+  if (dayAfterTomorrow) {
     date.setDate(date.getDate() + 2);
     return { date, day: dayIndexFor(date), label: 'day after tomorrow', explicit: true };
   }
-  if (nq.includes('tomorrow') || nq.includes('kal')) {
+  if (tomorrowAt >= 0) {
     date.setDate(date.getDate() + 1);
     return { date, day: dayIndexFor(date), label: 'tomorrow', explicit: true };
   }
-  if (nq.includes('yesterday')) {
+  if (words.includes('yesterday')) {
     date.setDate(date.getDate() - 1);
     return { date, day: dayIndexFor(date), label: 'yesterday', explicit: true };
   }
@@ -529,7 +542,7 @@ function detectDay(nq, now) {
     date.setDate(date.getDate() + diff);
     return { date, day: target, label: DAYS[target], explicit: true };
   }
-  if (nq.includes('today') || nq.includes('aaj')) {
+  if (words.includes('today') || words.includes('aaj')) {
     return { date, day: dayIndexFor(now), label: 'today', explicit: true };
   }
   return { date, day: dayIndexFor(now), label: 'today', explicit: false };
@@ -847,7 +860,7 @@ function answerTimetable({ data, profile, memory, nq, section, dayInfo, teacher,
     /\bgaps?\s+between\b/.test(nq) ||
     /\bkhali\b/.test(nq)
   ) {
-    const day = dayInfo.explicit ? dayInfo.day : dayIndexFor(new Date());
+    const day = dayInfo.explicit ? dayInfo.day : dayIndexFor(now);
     const free = freeSlotsOn(section, day, data.timetable);
     return {
       intent: 'free-periods',
@@ -941,7 +954,7 @@ function answerTimetable({ data, profile, memory, nq, section, dayInfo, teacher,
     confidence: 'high',
     text: lectures.length
       ? [
-          `**${dayLabel}** timetable for **${targetName}**:`,
+          `**${dayLabel} · ${dateKey(dayInfo.date)}** timetable for **${targetName}**:`,
           ...lectures.map((lecture) => formatLecture(lecture, section)),
           '',
           dayInfo.explicit ? '' : 'Showing today by default. Ask for “tomorrow” or any weekday for another day.',
@@ -1178,11 +1191,11 @@ function answerStudy({ data, nq }) {
   return null;
 }
 
-function answerNotices({ data, nq, memory }) {
+function answerNotices({ data, nq, memory, now = new Date() }) {
   if (nq.includes('holiday') || nq.includes('chutti')) {
-    const now = dateKey(new Date());
+    const today = dateKey(now);
     const upcoming = data.notices?.holidays
-      ?.filter((holiday) => holiday.date >= now)
+      ?.filter((holiday) => holiday.date >= today)
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(0, 6);
     return {
@@ -1331,7 +1344,8 @@ function isNowClassQuery(nq, explicitSection, place) {
 }
 
 export function answerQuestion(raw, context = {}) {
-  const { data, profile = {}, memory = {}, now = new Date() } = context;
+  const { data, profile = {}, memory = {} } = context;
+  const now = istDate(context.now || new Date());
   if (!data) {
     return { intent: 'loading', confidence: 'low', text: 'Campus data is still loading. Try again in a moment.' };
   }
@@ -1384,7 +1398,7 @@ export function answerQuestion(raw, context = {}) {
     return {
       intent: 'time',
       confidence: 'high',
-      text: `It is **${new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).format(now)}** on **${new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(now)}**. Timetable day: **${DAYS[dayIndexFor(now)] || 'Sunday'}**.`,
+      text: `It is **${clockLabel(now)} IST** on **${longDate(now)}**. Timetable day: **${DAYS[dayIndexFor(now)] || 'Sunday'}**.`,
       memory: { lastIntent: 'time' },
     };
   }
@@ -1541,7 +1555,10 @@ export function answerQuestion(raw, context = {}) {
   }
 
   // Campus route/place/room.
-  if (nq.includes('route') || nq.includes('direction') || nq.includes('distance') || nq.includes('how to reach') || nq.includes('where is') || nq.includes('kahan')) {
+  if (
+    !(activeSection && dayInfo.explicit) &&
+    (nq.includes('route') || nq.includes('direction') || nq.includes('distance') || nq.includes('how to reach') || nq.includes('where is') || nq.includes('kahan'))
+  ) {
     if (room) return answerRoom(room, data, memory);
     const extracted = extractRoute(nq, data);
     const destination = extracted.to || place;
@@ -1569,14 +1586,18 @@ export function answerQuestion(raw, context = {}) {
     }
   }
 
-  if (place && !/\btimetable|paper|notice|syllabus|student|teacher|faculty|teach|class|lecture|periods?\b|breaks?\s+(today|tomorrow|on|for|between)/.test(nq)) {
+  if (
+    place &&
+    !(activeSection && dayInfo.explicit) &&
+    !/\btimetable|paper|notice|syllabus|student|teacher|faculty|teach|class|lecture|periods?\b|breaks?\s+(today|tomorrow|on|for|between)/.test(nq)
+  ) {
     return answerPlace(place, data, nq, memory);
   }
   if (room && !/\bfree\b/.test(nq)) return answerRoom(room, data, memory);
 
   // Notices, exams and holidays.
   if (/\bnotice|notices|circular|update|news|holiday|holidays|exam|exams|date sheet|datesheet|result|event\b/.test(nq)) {
-    return answerNotices({ data, nq, memory });
+    return answerNotices({ data, nq, memory, now });
   }
 
   // Study resources.
@@ -1587,7 +1608,10 @@ export function answerQuestion(raw, context = {}) {
   if (/\bfree room|\bfree rooms|room availability|which room|khali room\b/.test(nq)) {
     return answerFreeRooms({ data, nq, dayInfo, now });
   }
-  if (/\btimetable|class|classes|schedule|lecture|period|periods|free period|free periods|breaks?\s+(today|tomorrow|on|for|between)|gaps?\s+between|next class|what do i have\b/.test(nq)) {
+  if (
+    (activeSection && dayInfo.explicit) ||
+    /\btimetable|class|classes|schedule|lecture|period|periods|free period|free periods|breaks?\s+(today|tomorrow|on|for|between)|gaps?\s+between|next class|what do i have\b/.test(nq)
+  ) {
     return answerTimetable({ data, profile, memory, nq, section: activeSection, dayInfo, teacher: faculty, room, student, now });
   }
 
@@ -1646,10 +1670,11 @@ export const ASSISTANT_STARTERS = [
 
 export function assistantSuggestions(profile, data) {
   const section = profile?.sectionId ? findSection(data?.timetable, profile.sectionId) : null;
+  const today = istDate();
   const base = [
     'My next class',
     'My timetable tomorrow',
-    section ? `Free rooms on ${DAYS[dayIndexFor(new Date())] || 'Monday'}` : 'Show ECE B1 timetable',
+    section ? `Free rooms on ${DAYS[dayIndexFor(today)] || 'Monday'}` : 'Show ECE B1 timetable',
     'Where is the library?',
     'Latest notices',
     'Upcoming holidays',

@@ -104,6 +104,7 @@ export default function About() {
       </section>
 
       <div className="about-stats">
+        <div><b>{data?.timetable?.sections?.length || 0}</b><span>timetable sections</span></div>
         <div><b>{(data?.students?.count || 0).toLocaleString('en-IN')}</b><span>students in roster</span></div>
         <div><b>{data?.faculty?.count || 0}</b><span>faculty profiles</span></div>
         <div><b>{(data?.papers?.count || 0).toLocaleString('en-IN')}</b><span>previous papers</span></div>

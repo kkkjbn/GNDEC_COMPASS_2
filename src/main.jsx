@@ -5,6 +5,7 @@ import './styles/academics.css';
 import './styles/campus-study.css';
 import './styles/app-pages.css';
 import './styles/admin.css';
+import './styles/banners.css';
 import './styles/responsive.css';
 import { AppProvider, useApp } from './context.jsx';
 import { RouterProvider, useRouter, routeTitle } from './lib/router.jsx';

@@ -91,10 +91,72 @@ export const formatClock = (value) => {
   return `${hour12}${mins ? `:${String(mins).padStart(2, '0')}` : ''} ${suffix}`;
 };
 
+// Wall-clock label for a Date whose local getters already represent the target zone.
+export const clockLabel = (date = new Date()) => {
+  const d = date instanceof Date ? date : new Date(date);
+  const suffix = d.getHours() >= 12 ? 'PM' : 'AM';
+  const hour = d.getHours() % 12 || 12;
+  return `${hour}:${String(d.getMinutes()).padStart(2, '0')} ${suffix}`;
+};
+
 export const dateKey = (date = new Date()) => {
   const d = date instanceof Date ? date : new Date(date);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+
+export const IST_TIME_ZONE = 'Asia/Kolkata';
+export const IST_OFFSET_MINUTES = 330;
+
+const istPartsFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: IST_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+});
+
+// Numeric IST wall-clock parts for an instant, independent of the device timezone.
+export const istParts = (date = new Date()) => {
+  const target = date instanceof Date ? date : new Date(date);
+  const parts = {};
+  for (const part of istPartsFormatter.formatToParts(target)) {
+    if (part.type !== 'literal') parts[part.type] = Number(part.value);
+  }
+  if (parts.hour === 24) parts.hour = 0;
+  return parts;
+};
+
+// A Date whose local getters read as IST wall-clock time. Safe for day/date arithmetic.
+export const istDate = (date = new Date()) => {
+  const parts = istParts(date);
+  return new Date(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second || 0);
+};
+
+export const istDateKey = (date = new Date()) => {
+  const parts = istParts(date);
+  return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+};
+
+export const istStamp = (date = new Date()) =>
+  new Intl.DateTimeFormat('en-IN', {
+    timeZone: IST_TIME_ZONE,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date instanceof Date ? date : new Date(date));
+
+export const istClock = (date = new Date()) => {
+  const parts = istParts(date);
+  const suffix = parts.hour >= 12 ? 'PM' : 'AM';
+  const hour = parts.hour % 12 || 12;
+  return `${hour}:${String(parts.minute).padStart(2, '0')} ${suffix}`;
+};
+
+export const istDateTimeLabel = (date = new Date()) => `${istStamp(date)} · ${istClock(date)} IST`;
 
 export const parseDate = (value) => {
   if (!value) return null;
