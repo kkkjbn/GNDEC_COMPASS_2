@@ -43,6 +43,21 @@ export function zoomView(view, nextScale, point, frame, minScale = MIN_SCALE, ma
   return clampView({ scale: targetScale, x, y }, frame, minScale, maxScale);
 }
 
+/** Convert an SVG viewport point to its underlying map coordinate. */
+export function mapPointAtScreen(view, screenPoint, frame) {
+  const centre = frameCentre(frame);
+  const scale = Number(view.scale) || 1;
+  return {
+    x: centre.x + (screenPoint.x - centre.x - view.x) / scale,
+    y: centre.y + (screenPoint.y - centre.y - view.y) / scale,
+  };
+}
+
+/** Zoom toward a viewport point while keeping its ground point fixed. */
+export function zoomViewAtScreen(view, nextScale, screenPoint, frame, minScale = MIN_SCALE, maxScale = MAX_SCALE) {
+  return zoomView(view, nextScale, mapPointAtScreen(view, screenPoint, frame), frame, minScale, maxScale);
+}
+
 export function panView(view, dx, dy, frame, minScale = MIN_SCALE, maxScale = MAX_SCALE) {
   return clampView({ scale: view.scale, x: view.x + dx, y: view.y + dy }, frame, minScale, maxScale);
 }

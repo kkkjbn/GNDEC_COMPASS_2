@@ -1584,7 +1584,7 @@ export default function Campus3D({
         <span>satellite ground</span>
       </div>
 
-      <div className="campus3d-credit">Imagery © Esri, Maxar, Earthstar Geographics · Footprints © OpenStreetMap</div>
+      <div className="campus3d-credit" title="Campus footprints and paths come from OpenStreetMap. Untagged heights and facade details are illustrative estimates, not a survey or street-level scan.">Imagery © Esri · Footprints © OpenStreetMap · Facades illustrative; some heights estimated</div>
     </div>
   );
 }

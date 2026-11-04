@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { findRoute, distanceMeters } from '../src/lib/campus.js';
-import { clampView, panView, pointsViewBox, viewTransform, zoomView } from '../src/lib/viewport.js';
+import { clampView, mapPointAtScreen, panView, pointsViewBox, viewTransform, zoomView, zoomViewAtScreen } from '../src/lib/viewport.js';
 import { orbitProject, screenToGround, zoomTargetAboutGround } from '../src/lib/camera3d.js';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -27,6 +27,18 @@ test('map zoom keeps the point under the cursor fixed', () => {
   const after = toWorld(point, next);
   assert.ok(Math.abs(before.x - after.x) < 0.001);
   assert.ok(Math.abs(before.y - after.y) < 0.001);
+});
+
+test('repeated cursor-anchored zooms stay over the same satellite feature', () => {
+  const cursor = { x: 742, y: 218 };
+  let view = { scale: 1.34, x: -31, y: 24 };
+  for (const scale of [1.9, 2.55, 3.2]) {
+    const groundBefore = mapPointAtScreen(view, cursor, frame);
+    view = zoomViewAtScreen(view, scale, cursor, frame);
+    const groundAfter = mapPointAtScreen(view, cursor, frame);
+    assert.ok(Math.abs(groundBefore.x - groundAfter.x) < 0.001);
+    assert.ok(Math.abs(groundBefore.y - groundAfter.y) < 0.001);
+  }
 });
 
 test('3D wheel zoom keeps the ground point under the cursor fixed', () => {

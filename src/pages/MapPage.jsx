@@ -23,7 +23,7 @@ import { Link, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
 import { categoryMeta, distanceMeters, findRoute, placePhoto, walkMinutes, CATEGORY_META } from '../lib/campus.js';
 import { SATELLITE_CONTEXT, SATELLITE_DETAIL, SATELLITE_VIEW } from '../lib/map-bounds.js';
-import { MAX_SCALE, MIN_SCALE, blendView, clampView, panView, viewIsClose, viewTransform, zoomView } from '../lib/viewport.js';
+import { MAX_SCALE, MIN_SCALE, blendView, clampView, panView, viewIsClose, viewTransform, zoomView, zoomViewAtScreen } from '../lib/viewport.js';
 import { norm, photoPath } from '../lib/utils.js';
 import Campus3D from '../components/Campus3D.jsx';
 import { RouteMap, RoutePreview } from '../components/RouteVisuals.jsx';
@@ -358,7 +358,7 @@ export default function MapPage() {
       if (!midPoint) return;
       const factor = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)) / pinchRef.current.distance;
       const frame = frameRef.current;
-      let next = zoomView(pinchRef.current.view, pinchRef.current.view.scale * factor, midPoint, frame);
+      let next = zoomViewAtScreen(pinchRef.current.view, pinchRef.current.view.scale * factor, pinchRef.current.point, frame);
       next = panView(next, midPoint.x - pinchRef.current.point.x, midPoint.y - pinchRef.current.point.y, frame);
       suppressClickRef.current = true;
       commitView(next);
@@ -417,7 +417,7 @@ export default function MapPage() {
     if (!point) return;
     const frame = frameRef.current;
     const base = targetViewRef.current;
-    animateToView(zoomView(base, Math.min(MAX_SCALE, base.scale * 1.65), point, frame));
+    animateToView(zoomViewAtScreen(base, Math.min(MAX_SCALE, base.scale * 1.65), point, frame));
   };
 
   useEffect(() => stopViewMotion, [stopViewMotion]);
@@ -444,7 +444,7 @@ export default function MapPage() {
       const base = targetViewRef.current;
       const factor = Math.exp(-event.deltaY * 0.0014);
       const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, base.scale * factor));
-      targetViewRef.current = zoomView(base, nextScale, point, frameRef.current);
+      targetViewRef.current = zoomViewAtScreen(base, nextScale, point, frameRef.current);
       runViewMotion();
     };
     wrap.addEventListener('wheel', onWheel, { passive: false });
@@ -470,7 +470,7 @@ export default function MapPage() {
       <PageHeader
         eyebrow="RASTA SAATHI · CAMPUS NAVIGATION"
         title="Find your way around campus"
-        description={`${places.length} places on the real OpenStreetMap campus, shortest routes measured on the mapped footpath network, and a 3D model built from published building footprints. Distances are metres on the ground, not straight-line guesses.`}
+        description={`${places.length} campus places mapped from OpenStreetMap. Routes follow the mapped walking network; endpoint locations can be approximate. The 3D view uses mapped footprints, with illustrative facades and estimated heights wherever survey data is missing.`}
       />
 
       {!online && (
