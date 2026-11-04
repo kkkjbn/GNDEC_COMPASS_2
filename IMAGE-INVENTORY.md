@@ -57,7 +57,8 @@ These image folders are served by Compass 2.0:
 - `img/hero/` — 7 images used for the home hero and fallbacks.
 - `img/gallery/` — 18 curated campus photos.
 - `img/rooms/` — 51 room photos.
-- `img/map/campus-satellite.jpg` and `img/map/campus-context.jpg` — real Esri World Imagery aerial exports. They power Satellite view, the 3D ground/roof texture, and direction-step image crops. Route lines are drawn over the real aerial images; the previews are not 3D screenshots or ground-level photos of each turn.
+- `img/map/campus-satellite.jpg` and `img/map/campus-context.jpg` — real Esri World Imagery aerial exports used in the map's Satellite view and as a 3D ground/roof texture. They are not used in the written walking directions or their photo previews.
+- Walking directions use real ground-level GNDEC photos for endpoints when the photo is credited to GNDEC. The downloaded GNDEC photo archive has no verified ground-level image for every turn, so intermediate steps remain numbered text directions instead of showing map imagery or an unrelated photo.
 
 The rest of the collection under `gndec-one/_research` and the top-level files is research material and is not shipped.
 

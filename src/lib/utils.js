@@ -67,6 +67,7 @@ export const photoPath = (src = '') => {
   if (!src) return '/img/gallery/campus-courtyard.jpg';
   if (src.endsWith('/main-gate.jpg')) return '/img/hero/gndec_gne_front.jpg';
   if (src.endsWith('/library.jpg')) return '/img/gallery/library-sign.jpg';
+  if (src.endsWith('/workshop.jpg')) return '/img/hero/gndec_engine.jpg';
   if (src.startsWith('/assets/img/')) return src.replace('/assets/img/', '/img/');
   if (src.startsWith('assets/img/')) return '/' + src.replace('assets/img/', 'img/');
   return src;

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { findRoute, distanceMeters } from '../src/lib/campus.js';
+import { photoPath } from '../src/lib/utils.js';
 import { clampView, mapPointAtScreen, panView, pointsViewBox, viewTransform, zoomView, zoomViewAtScreen } from '../src/lib/viewport.js';
 import { orbitProject, panTargetByScreen, screenToGround, zoomTargetAboutGround } from '../src/lib/camera3d.js';
 import { triangulatePolygon } from '../src/lib/triangulate.js';
@@ -164,12 +165,21 @@ test('every route step carries real map geometry along the OSM walk network', ()
   assert.ok(route.connector.from >= 0 && route.connector.to >= 0);
 });
 
-test('direction thumbnails use the stored real satellite photograph, not the 3D canvas', () => {
-  const satellite = fs.readFileSync(path.join(root, 'public', 'img', 'map', 'campus-satellite.jpg'));
-  assert.equal(satellite[0], 0xff);
-  assert.equal(satellite[1], 0xd8);
-  const routeVisuals = fs.readFileSync(path.join(root, 'src', 'components', 'RouteVisuals.jsx'), 'utf8');
-  assert.match(routeVisuals, /SATELLITE_DETAIL\.src/);
-  assert.match(routeVisuals, /<image/);
-  assert.doesNotMatch(routeVisuals, /Campus3D/);
+test('walking directions use credited GNDEC ground photos and no map thumbnails', () => {
+  const mapPage = fs.readFileSync(path.join(root, 'src', 'pages', 'MapPage.jsx'), 'utf8');
+  const directions = mapPage.slice(mapPage.indexOf('className="route-steps with-thumbs"'));
+  assert.match(directions, /routePhotoForPlace\(source\)/);
+  assert.match(directions, /routePhotoForPlace\(destination\)/);
+  assert.match(directions, /GNDEC PHOTO/);
+  assert.doesNotMatch(directions, /<RouteMap/);
+  assert.match(mapPage, /return \/gndec\/i\.test\(credit\)/);
+  const resolvedWorkshop = photoPath('/assets/img/workshop.jpg');
+  assert.equal(resolvedWorkshop, '/img/hero/gndec_engine.jpg');
+
+  const entrance = fs.readFileSync(path.join(root, 'public', 'img', 'hero', 'gndec_gne_front.jpg'));
+  const workshop = fs.readFileSync(path.join(root, 'public', 'img', 'hero', 'gndec_engine.jpg'));
+  assert.equal(entrance[0], 0xff);
+  assert.equal(entrance[1], 0xd8);
+  assert.equal(workshop[0], 0xff);
+  assert.equal(workshop[1], 0xd8);
 });

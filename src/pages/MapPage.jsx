@@ -476,6 +476,12 @@ export default function MapPage() {
 
   const roomsAtPlace = room ? [] : [];
   const routePhoto = destination ? placePhoto(destination, campus) : null;
+  const routePhotoForPlace = (place) => {
+    if (!place) return null;
+    const galleryPhoto = (campus?.gallery || []).find((item) => item.place === place.id && item.src);
+    const credit = place.photoCredit || galleryPhoto?.credit || '';
+    return /gndec/i.test(credit) ? placePhoto(place, campus) : null;
+  };
   const atDefault =
     Math.abs(view.scale - defaultView.scale) < 0.01 &&
     Math.abs(view.x - defaultView.x) < 0.004 &&
@@ -916,15 +922,17 @@ export default function MapPage() {
                   </div>
                   <div className="route-imagery-note">
                     <Camera size={14} />
-                    <span>Step previews are crops of real Esri aerial photography, with the walking line overlaid. They are separate from the 3D model; ground-level photos are not available for every turn.</span>
+                    <span>Photos are original GNDEC campus images for places with a matching photo. Numbered steps show the walking directions; turn-by-turn ground photos are not in the GNDEC photo archive.</span>
                   </div>
                   <ol className="route-steps with-thumbs">
                     <li>
-                      <span className="step-thumb">
-                        <RouteMap points={source?.pos ? [source.pos] : []} compact padding={0.045} label={`Satellite view of ${source?.name || 'the starting point'}`} />
-                        <b className="step-thumb-index start">A</b>
-                        <span className="step-thumb-source">AERIAL</span>
-                      </span>
+                      {routePhotoForPlace(source) ? (
+                        <span className="step-thumb">
+                          <img src={routePhotoForPlace(source)} alt={`${source?.name || 'Starting place'} · GNDEC photo`} loading="lazy" />
+                          <b className="step-thumb-index start">A</b>
+                          <span className="step-thumb-source">GNDEC PHOTO</span>
+                        </span>
+                      ) : <span className="step-marker start">A</span>}
                       <div>
                         <b>Start at {source?.name || 'your location'}</b>
                         <small>{source?.description || 'Use the main gate as a safe default starting point.'}</small>
@@ -932,13 +940,13 @@ export default function MapPage() {
                     </li>
                     {route.steps.map((step, index) => (
                       <li key={`${step.instruction}-${index}`}>
-                        {step.points?.length ? (
+                        {step.turn === 'arrive' && routePhotoForPlace(destination) ? (
                           <span className="step-thumb">
-                            <RouteMap points={step.points} compact padding={0.03} label={`Satellite view of step ${index + 1}`} />
+                            <img src={routePhotoForPlace(destination)} alt={`${destination?.name || 'Destination'} · GNDEC photo`} loading="lazy" />
                             <b className={`step-thumb-index ${step.turn === 'arrive' ? 'end' : ''}`}>
-                              {step.turn === 'arrive' ? <Check size={11} /> : index + 1}
+                              <Check size={11} />
                             </b>
-                            <span className="step-thumb-source">AERIAL</span>
+                            <span className="step-thumb-source">GNDEC PHOTO</span>
                           </span>
                         ) : (
                           <span className={`step-marker ${step.turn === 'arrive' ? 'end' : ''}`}>
