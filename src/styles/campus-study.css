@@ -97,7 +97,7 @@
 .campus3d {
   position: relative;
   width: 100%;
-  height: clamp(420px, 62vh, 690px);
+  height: clamp(460px, 64vh, 720px);
   overflow: hidden;
 }
 
@@ -116,7 +116,7 @@
 
 .campus3d-hint {
   position: absolute;
-  top: 44px;
+  top: 80px;
   left: 10px;
   max-width: calc(100% - 110px);
   padding: 4px 8px;
@@ -194,17 +194,121 @@
   font-size: 12px;
 }
 
+.campus3d-views {
+  position: absolute;
+  top: 44px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(14, 24, 19, 0.8);
+  box-shadow: 0 4px 14px rgba(8, 16, 11, 0.24);
+  backdrop-filter: blur(8px);
+}
+
+.campus3d-views button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #c6d5cb;
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.campus3d-views button:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.campus3d-views button.active {
+  background: rgba(111, 211, 164, 0.2);
+  color: #a4ecc5;
+}
+
+.campus3d-credit {
+  position: absolute;
+  left: 10px;
+  right: 84px;
+  bottom: 78px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(6, 14, 9, 0.42);
+  color: rgba(233, 239, 228, 0.86);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.map-canvas-wrap.is-satellite {
+  background: #2c3a2a;
+}
+
+.route-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: -3px 0 2px;
+  color: var(--muted);
+  font-size: 8.5px;
+  line-height: 1.4;
+}
+
+.route-meta span {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.route-meta svg {
+  flex: none;
+  margin-top: 1px;
+}
+
 .campus-svg {
   display: block;
   width: 100%;
-  height: clamp(420px, 62vh, 690px);
+  height: clamp(460px, 64vh, 720px);
   cursor: grab;
-  touch-action: manipulation;
+  touch-action: none;
   user-select: none;
 }
 
-.campus-svg:active {
+.campus-svg:active,
+.map-canvas-wrap.is-dragging .campus-svg {
   cursor: grabbing;
+}
+
+.map-zoom {
+  will-change: transform;
+}
+
+.map-canvas-wrap > .campus-svg,
+.map-canvas-wrap > .campus3d {
+  animation: mapSurfaceIn 0.28s ease both;
+}
+
+@keyframes mapSurfaceIn {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .svg-place {
@@ -588,6 +692,118 @@
   font-weight: 600;
 }
 
+.route-preview {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--paper-2);
+}
+
+.route-preview-map {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 2.1;
+  padding: 0;
+  border: 0;
+  background: #26352a;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.route-preview-map .route-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.35s ease;
+}
+
+.route-preview-map:hover .route-map {
+  transform: scale(1.025);
+}
+
+.route-preview-badge {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(10, 30, 22, 0.82);
+  color: #f5f1e4;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  backdrop-filter: blur(4px);
+}
+
+.route-preview-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.route-preview-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.route-dot.start {
+  background: #c97a45;
+}
+
+.route-dot.end {
+  background: #0f6b4f;
+}
+
+.route-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.route-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-2);
+  color: var(--green-2);
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.route-actions button:hover {
+  border-color: var(--green);
+  background: var(--green-wash);
+}
+
+.route-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .route-steps {
   display: flex;
   flex-direction: column;
@@ -651,6 +867,57 @@
   flex-direction: column;
   min-width: 0;
   flex: 1;
+}
+
+.route-steps.with-thumbs li::before {
+  left: 26px;
+  top: 52px;
+  bottom: -8px;
+}
+
+.step-thumb {
+  position: relative;
+  width: 54px;
+  height: 42px;
+  flex: none;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #26352a;
+  box-shadow: 0 1px 2px rgba(20, 33, 25, 0.12);
+}
+
+.step-thumb .route-map {
+  width: 100%;
+  height: 100%;
+}
+
+.step-thumb-index {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: rgba(12, 26, 19, 0.82);
+  color: #f7f2e4;
+  font-size: 8px;
+  font-weight: 750;
+  line-height: 1;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+}
+
+.step-thumb-index.start {
+  background: #0f6b4f;
+}
+
+.step-thumb-index.end {
+  background: #c97a45;
 }
 
 .route-steps b {

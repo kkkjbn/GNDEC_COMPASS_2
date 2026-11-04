@@ -6,3 +6,5 @@ dist/
 !.env.example
 coverage/
 *.log
+scripts/.routes.json
+_research/

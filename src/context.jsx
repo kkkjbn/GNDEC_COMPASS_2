@@ -4,6 +4,9 @@ import { buildSearchIndex } from './lib/search.js';
 
 const DATA_FILES = [
   'campus',
+  'campus-detail',
+  'campus-paths',
+  'campus-trees',
   'timetable',
   'room-timetable',
   'notices',
@@ -20,6 +23,9 @@ const DATA_FILES = [
 
 const DATA_KEYS = {
   'room-timetable': 'roomTimetable',
+  'campus-detail': 'campusDetail',
+  'campus-paths': 'campusPaths',
+  'campus-trees': 'campusTrees',
 };
 
 const AppContext = createContext(null);
@@ -149,6 +155,10 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return undefined;
+    // Vite serves /sw.js as index.html in dev, which produces a MIME error and
+    // can cache half-built modules. Only register the generated worker on the
+    // production bundle.
+    if (import.meta.env.DEV) return undefined;
     let mounted = true;
     const onControllerChange = () => {
       if (firstController.current === null) {

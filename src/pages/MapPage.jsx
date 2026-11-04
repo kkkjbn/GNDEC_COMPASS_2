@@ -1,12 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeftRight,
   ArrowRight,
+  Building2,
   Camera,
   Check,
   ChevronDown,
+  CircleDot,
   Footprints,
   Info,
+  Layers3,
   MapPin,
   Maximize2,
   Minus,
@@ -19,8 +22,11 @@ import {
 import { Link, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
 import { categoryMeta, distanceMeters, findRoute, placePhoto, walkMinutes, CATEGORY_META } from '../lib/campus.js';
+import { SATELLITE_CONTEXT, SATELLITE_DETAIL, SATELLITE_VIEW } from '../lib/map-bounds.js';
+import { MAX_SCALE, MIN_SCALE, blendView, clampView, panView, viewIsClose, viewTransform, zoomView } from '../lib/viewport.js';
 import { norm, photoPath } from '../lib/utils.js';
 import Campus3D from '../components/Campus3D.jsx';
+import { RouteMap, RoutePreview } from '../components/RouteVisuals.jsx';
 import {
   Badge,
   DataFoot,
@@ -35,32 +41,65 @@ import {
   Tabs,
 } from '../components/ui.jsx';
 
-const VIEW = { width: 1.22, height: 1.34, x: -0.06, y: -0.08 };
+const PLAN_VIEW = { width: 1.22, height: 1.34, x: -0.06, y: -0.08 };
+const PLAN_DEFAULT = { scale: 1, x: 0, y: 0 };
+const SATELLITE_DEFAULT = { scale: 1.34, x: 0, y: 0.01 };
+const insideDetail = ([x, y]) =>
+  x >= SATELLITE_DETAIL.x &&
+  x <= SATELLITE_DETAIL.x + SATELLITE_DETAIL.width &&
+  y >= SATELLITE_DETAIL.y &&
+  y <= SATELLITE_DETAIL.y + SATELLITE_DETAIL.height;
+
+const MODE_LABEL = {
+  '3d': '3D model',
+  satellite: 'Satellite',
+  plan: 'Plan',
+};
 
 function toPoints(route) {
-  if (!route) return [];
-  const points = [route.source, ...route.steps.map((step) => step.node), route.target]
-    .filter((item) => item && item.pos)
-    .map((item) => item.pos);
-  return points.filter((point, index) => index === 0 || point[0] !== points[index - 1][0] || point[1] !== points[index - 1][1]);
+  if (!route?.points) return [];
+  return route.points.filter(
+    (point, index) => index === 0 || point[0] !== route.points[index - 1][0] || point[1] !== route.points[index - 1][1],
+  );
 }
 
 export default function MapPage() {
   const { data, online, resolvedTheme } = useApp();
   const { searchParams, navigate } = useRouter();
   const campus = data?.campus;
+  const detail = data?.campusDetail;
+  const paths = data?.campusPaths;
+  const trees = data?.campusTrees;
   const places = campus?.places || [];
   const gallery = campus?.gallery || [];
 
-  const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
-  const [drag, setDrag] = useState(null);
+  const [mode, setMode] = useState(() => {
+    const requested = searchParams.get('view');
+    return requested === 'plan' || requested === 'satellite' ? requested : '3d';
+  });
+  const [view, setView] = useState(() => (mode === 'satellite' ? SATELLITE_DEFAULT : PLAN_DEFAULT));
+  const [dragging, setDragging] = useState(false);
+  const [cameraCommand, setCameraCommand] = useState(null);
   const [hovered, setHovered] = useState(null);
   const [category, setCategory] = useState('all');
   const [placeQuery, setPlaceQuery] = useState('');
   const [panelTab, setPanelTab] = useState(searchParams.get('tab') === 'gallery' ? 'photos' : 'directions');
   const [lightbox, setLightbox] = useState(null);
-  const [mode, setMode] = useState(searchParams.get('view') === 'plan' ? 'plan' : '3d');
   const svgRef = useRef(null);
+  const wrapRef = useRef(null);
+  const frame = mode === 'satellite' ? SATELLITE_VIEW : PLAN_VIEW;
+  const frameRef = useRef(frame);
+  const viewRef = useRef(view);
+  const targetViewRef = useRef(view);
+  const viewMotionRef = useRef(0);
+  const dragRef = useRef(null);
+  const pointersRef = useRef(new Map());
+  const pinchRef = useRef(null);
+  const suppressClickRef = useRef(false);
+  const framedRouteRef = useRef(false);
+  frameRef.current = frame;
+  viewRef.current = view;
+  const streetRequested = searchParams.get('street') === '1';
 
   const roomQuery = searchParams.get('room') || '';
   const room = useMemo(
@@ -91,10 +130,40 @@ export default function MapPage() {
     if (fromParam) setFrom(fromParam);
   }, [fromParam]);
 
-  const route = useMemo(() => findRoute(campus, from, to), [campus, from, to]);
+  useEffect(() => {
+    const requested = searchParams.get('view');
+    if (requested === 'plan' || requested === 'satellite') setMode(requested);
+  }, [searchParams]);
+
+  const route = useMemo(() => findRoute(campus, from, to, paths), [campus, from, to, paths]);
   const source = places.find((place) => place.id === from);
   const destination = places.find((place) => place.id === to);
   const routePoints = useMemo(() => toPoints(route), [route]);
+
+  // Nearest published OSM levels/height for the selected destination, when a
+  // building polygon can be matched by name. Nothing is invented: unmatched
+  // places simply do not show floor data.
+  const destinationBuilding = useMemo(() => {
+    if (!destination || !detail?.buildings) return null;
+    const words = norm(destination.name).split(' ').filter((word) => word.length > 3);
+    let best = null;
+    for (const shape of campus?.geometry || []) {
+      const meta = detail.buildings[String(shape.id)];
+      if (!meta || !shape.name) continue;
+      const shapeWords = norm(shape.name).split(' ').filter((word) => word.length > 3);
+      if (!shapeWords.length) continue;
+      const shared = shapeWords.filter((word) => words.includes(word)).length;
+      const score = shared / Math.max(1, Math.min(words.length, shapeWords.length));
+      if (score >= 0.6 && (!best || score > best.score)) best = { shape, meta, score };
+    }
+    if (!best) return null;
+    return {
+      name: best.shape.name,
+      levels: best.meta.levels,
+      height: best.meta.height,
+      source: best.meta.levels || best.meta.height ? 'OpenStreetMap tags' : 'no published levels',
+    };
+  }, [campus, destination, detail]);
 
   const filteredPlaces = useMemo(() => {
     const terms = norm(placeQuery).split(' ').filter(Boolean);
@@ -117,57 +186,260 @@ export default function MapPage() {
       .slice(0, 5);
   }, [places, destination]);
 
-  const setRouteParam = (key, value) => {
+  const setRouteParams = (updates) => {
     const next = new URLSearchParams(searchParams);
-    if (value) next.set(key, value);
-    else next.delete(key);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    }
     navigate(`/map?${next.toString()}`, { replace: true, keepScroll: true });
   };
+
+  const setRouteParam = (key, value) => setRouteParams({ [key]: value });
+
+  const requestPreset = (name) => setCameraCommand({ name, id: `${Date.now()}-${Math.random()}` });
 
   const selectDestination = (id) => {
     setTo(id);
     setRouteParam('to', id);
     setPanelTab('directions');
+    if (mode === '3d' && !streetRequested) requestPreset('route');
   };
 
   const swap = () => {
     setFrom(to);
     setTo(from);
-    setRouteParam('from', to);
-    setRouteParam('to', from);
+    setRouteParams({ from: to, to: from });
+    if (mode === '3d' && !streetRequested) requestPreset('route');
   };
+
+  // Arriving from Ask Compass or a shared link should frame the whole route,
+  // not leave the camera at the default overview.
+  useEffect(() => {
+    if (framedRouteRef.current) return;
+    if (mode !== '3d' || streetRequested) return;
+    if (!toParam && !fromParam) return;
+    if (!route?.points || route.points.length < 2) return;
+    framedRouteRef.current = true;
+    requestPreset('route');
+    // Only auto-frame the first route URL for this map visit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, streetRequested, route, toParam, fromParam]);
+
+  const defaultView = mode === 'satellite' ? SATELLITE_DEFAULT : PLAN_DEFAULT;
+
+  const stopViewMotion = useCallback(() => {
+    if (viewMotionRef.current) window.cancelAnimationFrame(viewMotionRef.current);
+    viewMotionRef.current = 0;
+  }, []);
+
+  const commitView = useCallback((next) => {
+    const clamped = clampView(next, frameRef.current);
+    viewRef.current = clamped;
+    targetViewRef.current = clamped;
+    setView(clamped);
+  }, []);
+
+  const runViewMotion = useCallback(() => {
+    if (viewMotionRef.current) return;
+    let last = performance.now();
+    const tick = (now) => {
+      const dt = Math.min(64, now - last);
+      last = now;
+      const current = viewRef.current;
+      const target = targetViewRef.current;
+      if (viewIsClose(current, target, 0.0004)) {
+        viewRef.current = target;
+        setView(target);
+        viewMotionRef.current = 0;
+        return;
+      }
+      const next = blendView(current, target, 1 - Math.exp(-dt / 58));
+      viewRef.current = next;
+      setView(next);
+      viewMotionRef.current = window.requestAnimationFrame(tick);
+    };
+    viewMotionRef.current = window.requestAnimationFrame(tick);
+  }, []);
+
+  const animateToView = useCallback(
+    (next) => {
+      targetViewRef.current = clampView(next, frameRef.current);
+      runViewMotion();
+    },
+    [runViewMotion],
+  );
+
+  const framePointFromClient = useCallback((clientX, clientY) => {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const matrix = svg.getScreenCTM();
+    if (!matrix) return null;
+    const point = svg.createSVGPoint();
+    point.x = clientX;
+    point.y = clientY;
+    const local = point.matrixTransform(matrix.inverse());
+    return { x: local.x, y: local.y };
+  }, []);
 
   const zoom = (delta) => {
-    setView((current) => ({
-      ...current,
-      scale: Math.max(1, Math.min(2.8, Math.round((current.scale + delta) * 10) / 10)),
-    }));
+    const base = targetViewRef.current;
+    const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, base.scale + delta));
+    const frame = frameRef.current;
+    animateToView(zoomView(base, scale, { x: frame.x + frame.width / 2, y: frame.y + frame.height / 2 }, frame));
   };
 
-  const resetView = () => setView({ scale: 1, x: 0, y: 0 });
+  const resetView = () => animateToView(defaultView);
 
   const onPointerDown = (event) => {
     if (event.button !== 0) return;
-    svgRef.current?.setPointerCapture?.(event.pointerId);
-    setDrag({ startX: event.clientX, startY: event.clientY, originX: view.x, originY: view.y, moved: false });
-  };
-  const onPointerMove = (event) => {
-    if (!drag) return;
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const dx = ((event.clientX - drag.startX) / rect.width) * VIEW.width / view.scale;
-    const dy = ((event.clientY - drag.startY) / rect.height) * VIEW.height / view.scale;
-    if (Math.abs(dx) + Math.abs(dy) > 0.004) setDrag((current) => (current ? { ...current, moved: true } : current));
-    setView((current) => ({ ...current, x: drag.originX + dx, y: drag.originY + dy }));
-  };
-  const onPointerUp = (event) => {
-    if (drag?.moved) {
-      setTimeout(() => setDrag(null), 0);
-    } else {
-      setDrag(null);
+    const svg = svgRef.current;
+    try {
+      svg?.setPointerCapture?.(event.pointerId);
+    } catch {
+      // Synthetic or already-released pointers have no capture target.
     }
-    svgRef.current?.releasePointerCapture?.(event.pointerId);
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    suppressClickRef.current = false;
+    if (pointersRef.current.size >= 2) {
+      const pair = [...pointersRef.current.values()];
+      const a = pair[0];
+      const b = pair[1];
+      const midX = (a.x + b.x) / 2;
+      const midY = (a.y + b.y) / 2;
+      pinchRef.current = {
+        distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+        point: framePointFromClient(midX, midY),
+        view: { ...targetViewRef.current },
+      };
+      dragRef.current = null;
+      setDragging(false);
+      stopViewMotion();
+      return;
+    }
+    stopViewMotion();
+    const startPoint = framePointFromClient(event.clientX, event.clientY);
+    dragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startPoint,
+      origin: { ...viewRef.current },
+      lastPoint: startPoint,
+      lastTime: performance.now(),
+      vx: 0,
+      vy: 0,
+      moved: false,
+    };
+    setDragging(true);
   };
+
+  const onPointerMove = (event) => {
+    if (pointersRef.current.has(event.pointerId)) {
+      pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
+
+    if (pointersRef.current.size >= 2 && pinchRef.current) {
+      const pair = [...pointersRef.current.values()];
+      const a = pair[0];
+      const b = pair[1];
+      const midX = (a.x + b.x) / 2;
+      const midY = (a.y + b.y) / 2;
+      const midPoint = framePointFromClient(midX, midY);
+      if (!midPoint) return;
+      const factor = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)) / pinchRef.current.distance;
+      const frame = frameRef.current;
+      let next = zoomView(pinchRef.current.view, pinchRef.current.view.scale * factor, midPoint, frame);
+      next = panView(next, midPoint.x - pinchRef.current.point.x, midPoint.y - pinchRef.current.point.y, frame);
+      suppressClickRef.current = true;
+      commitView(next);
+      return;
+    }
+
+    const drag = dragRef.current;
+    if (!drag || !drag.startPoint) return;
+    const point = framePointFromClient(event.clientX, event.clientY);
+    if (!point) return;
+    const dx = point.x - drag.startPoint.x;
+    const dy = point.y - drag.startPoint.y;
+    if (Math.abs(dx) + Math.abs(dy) > 0.004) {
+      drag.moved = true;
+      suppressClickRef.current = true;
+    }
+    const frame = frameRef.current;
+    commitView({ scale: drag.origin.scale, x: drag.origin.x + dx, y: drag.origin.y + dy });
+
+    const now = performance.now();
+    const elapsed = Math.max(1, now - drag.lastTime);
+    drag.vx = (point.x - drag.lastPoint.x) / elapsed;
+    drag.vy = (point.y - drag.lastPoint.y) / elapsed;
+    drag.lastPoint = point;
+    drag.lastTime = now;
+  };
+
+  const onPointerUp = (event) => {
+    pointersRef.current.delete(event.pointerId);
+    if (pointersRef.current.size < 2) pinchRef.current = null;
+    const drag = dragRef.current;
+    dragRef.current = null;
+    setDragging(false);
+    try {
+      svgRef.current?.releasePointerCapture?.(event.pointerId);
+    } catch {
+      // The browser may have released capture before pointerup.
+    }
+    if (!drag || !drag.moved) return;
+    const frame = frameRef.current;
+    if (Math.abs(drag.vx) + Math.abs(drag.vy) > 0.00004) {
+      targetViewRef.current = clampView(
+        {
+          scale: viewRef.current.scale,
+          x: viewRef.current.x + drag.vx * 95,
+          y: viewRef.current.y + drag.vy * 95,
+        },
+        frame,
+      );
+      runViewMotion();
+    }
+  };
+
+  const onDoubleClick = (event) => {
+    const point = framePointFromClient(event.clientX, event.clientY);
+    if (!point) return;
+    const frame = frameRef.current;
+    const base = targetViewRef.current;
+    animateToView(zoomView(base, Math.min(MAX_SCALE, base.scale * 1.65), point, frame));
+  };
+
+  useEffect(() => stopViewMotion, [stopViewMotion]);
+
+  useEffect(() => {
+    stopViewMotion();
+    const next = mode === 'satellite' ? SATELLITE_DEFAULT : PLAN_DEFAULT;
+    viewRef.current = next;
+    targetViewRef.current = next;
+    setView(next);
+    dragRef.current = null;
+    pinchRef.current = null;
+    pointersRef.current.clear();
+    setDragging(false);
+  }, [mode, stopViewMotion]);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap || mode === '3d') return undefined;
+    const onWheel = (event) => {
+      event.preventDefault();
+      const point = framePointFromClient(event.clientX, event.clientY);
+      if (!point) return;
+      const base = targetViewRef.current;
+      const factor = Math.exp(-event.deltaY * 0.0014);
+      const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, base.scale * factor));
+      targetViewRef.current = zoomView(base, nextScale, point, frameRef.current);
+      runViewMotion();
+    };
+    wrap.addEventListener('wheel', onWheel, { passive: false });
+    return () => wrap.removeEventListener('wheel', onWheel);
+  }, [mode, framePointFromClient, runViewMotion]);
 
   if (!data) return null;
 
@@ -178,13 +450,17 @@ export default function MapPage() {
 
   const roomsAtPlace = room ? [] : [];
   const routePhoto = destination ? placePhoto(destination, campus) : null;
+  const atDefault =
+    Math.abs(view.scale - defaultView.scale) < 0.01 &&
+    Math.abs(view.x - defaultView.x) < 0.004 &&
+    Math.abs(view.y - defaultView.y) < 0.004;
 
   return (
     <div className="map-page">
       <PageHeader
         eyebrow="RASTA SAATHI · CAMPUS NAVIGATION"
         title="Find your way around campus"
-        description={`Illustrated campus geometry, ${places.length} places, estimated walking routes and photo landmarks. Switch to 3D for an extruded model of the published building footprints. Indoor door-level routes are not verified yet.`}
+        description={`${places.length} places on the real OpenStreetMap campus, shortest routes measured on the mapped footpath network, and a 3D model built from published building footprints. Distances are metres on the ground, not straight-line guesses.`}
       />
 
       {!online && (
@@ -199,23 +475,26 @@ export default function MapPage() {
             <SearchField value={placeQuery} onChange={setPlaceQuery} placeholder="Find a place on campus…" className="map-search" />
             <div className="map-toolbar-actions">
               <div className="map-mode-switch" role="group" aria-label="Map view">
-                <button type="button" className={mode === 'plan' ? 'active' : ''} onClick={() => setMode('plan')}>
-                  Plan
-                </button>
-                <button type="button" className={mode === '3d' ? 'active' : ''} onClick={() => setMode('3d')}>
+                <button type="button" className={mode === '3d' ? 'active' : ''} onClick={() => { setMode('3d'); setRouteParams({ view: '', street: '' }); }}>
                   3D
                 </button>
+                <button type="button" className={mode === 'satellite' ? 'active' : ''} onClick={() => { setMode('satellite'); setRouteParams({ view: 'satellite', street: '' }); }}>
+                  Satellite
+                </button>
+                <button type="button" className={mode === 'plan' ? 'active' : ''} onClick={() => { setMode('plan'); setRouteParams({ view: 'plan', street: '' }); }}>
+                  Plan
+                </button>
               </div>
-              {mode === 'plan' && (
+              {mode !== '3d' && (
                 <>
-                  <button type="button" className="icon-btn" onClick={() => zoom(-0.2)} aria-label="Zoom out" disabled={view.scale <= 1}>
+                  <button type="button" className="icon-btn" onClick={() => zoom(-0.25)} aria-label="Zoom out" disabled={view.scale <= MIN_SCALE + 0.001}>
                     <Minus size={16} />
                   </button>
                   <span className="zoom-level">{Math.round(view.scale * 100)}%</span>
-                  <button type="button" className="icon-btn" onClick={() => zoom(0.2)} aria-label="Zoom in" disabled={view.scale >= 2.8}>
+                  <button type="button" className="icon-btn" onClick={() => zoom(0.25)} aria-label="Zoom in" disabled={view.scale >= MAX_SCALE - 0.001}>
                     <Plus size={16} />
                   </button>
-                  <button type="button" className="icon-btn" onClick={resetView} aria-label="Reset map view" disabled={view.scale === 1 && view.x === 0 && view.y === 0}>
+                  <button type="button" className="icon-btn" onClick={resetView} aria-label="Reset map view" disabled={atDefault}>
                     <Maximize2 size={15} />
                   </button>
                 </>
@@ -223,28 +502,39 @@ export default function MapPage() {
             </div>
           </div>
 
-          <div className={`map-canvas-wrap ${mode === '3d' ? 'is-3d' : ''}`}>
+          <div
+            ref={wrapRef}
+            className={`map-canvas-wrap ${mode === '3d' ? 'is-3d' : mode === 'satellite' ? 'is-satellite' : ''} ${dragging ? 'is-dragging' : ''}`}
+          >
             {mode === '3d' ? (
               <Campus3D
                 campus={campus}
+                detail={detail}
+                paths={paths}
+                trees={trees}
                 places={places}
-                routePoints={routePoints}
+                route={route}
                 from={from}
                 to={to}
                 theme={resolvedTheme}
+                street={streetRequested}
+                command={cameraCommand}
+                onPreset={(name) => setRouteParams({ street: name === 'street' ? '1' : '' })}
                 onSelect={(id) => selectDestination(id)}
               />
             ) : (
             <svg
               ref={svgRef}
               className="campus-svg"
-              viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.width} ${VIEW.height}`}
+              viewBox={`${frame.x} ${frame.y} ${frame.width} ${frame.height}`}
+              preserveAspectRatio={mode === 'satellite' ? 'xMidYMid slice' : 'xMidYMid meet'}
               role="img"
-              aria-label="Illustrated map of the GNDEC campus with gates, buildings and walking routes"
+              aria-label={mode === 'satellite' ? 'Satellite map of the GNDEC campus with walking routes' : 'Illustrated plan of the GNDEC campus with gates, buildings and walking routes'}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
+              onDoubleClick={onDoubleClick}
             >
               <defs>
                 <pattern id="map-grid" width="0.035" height="0.035" patternUnits="userSpaceOnUse">
@@ -258,14 +548,43 @@ export default function MapPage() {
                 </filter>
               </defs>
 
-              <rect x={VIEW.x} y={VIEW.y} width={VIEW.width} height={VIEW.height} fill="#f4f0e3" />
-              <rect x={VIEW.x} y={VIEW.y} width={VIEW.width} height={VIEW.height} fill="url(#map-grid)" />
+              <rect x={frame.x} y={frame.y} width={frame.width} height={frame.height} fill={mode === 'satellite' ? '#2c3a2a' : '#f4f0e3'} />
+              {mode === 'satellite' && (
+                <>
+                  <image
+                    href={SATELLITE_CONTEXT.src}
+                    x={SATELLITE_CONTEXT.x}
+                    y={SATELLITE_CONTEXT.y}
+                    width={SATELLITE_CONTEXT.width}
+                    height={SATELLITE_CONTEXT.height}
+                    preserveAspectRatio="none"
+                  />
+                  <image
+                    href={SATELLITE_DETAIL.src}
+                    x={SATELLITE_DETAIL.x}
+                    y={SATELLITE_DETAIL.y}
+                    width={SATELLITE_DETAIL.width}
+                    height={SATELLITE_DETAIL.height}
+                    preserveAspectRatio="none"
+                  />
+                  <rect
+                    x={SATELLITE_DETAIL.x}
+                    y={SATELLITE_DETAIL.y}
+                    width={SATELLITE_DETAIL.width}
+                    height={SATELLITE_DETAIL.height}
+                    fill="none"
+                    stroke="rgba(255,255,255,0.18)"
+                    strokeWidth="0.0025"
+                  />
+                </>
+              )}
+              {mode === 'plan' && <rect x={PLAN_VIEW.x} y={PLAN_VIEW.y} width={PLAN_VIEW.width} height={PLAN_VIEW.height} fill="url(#map-grid)" />}
 
               <g
-                transform={`translate(${view.x} ${view.y}) scale(${view.scale})`}
-                style={{ transformOrigin: 'center', transition: drag ? 'none' : 'transform .22s ease' }}
+                transform={viewTransform(view, frame)}
+                className="map-zoom"
               >
-                {campus?.geometry?.map((shape) => {
+                {mode === 'plan' && campus?.geometry?.map((shape) => {
                   const leisure = shape.type === 'leisure';
                   const isPool = shape.kind === 'swimming_pool';
                   const isParking = shape.kind === 'parking';
@@ -283,11 +602,34 @@ export default function MapPage() {
                   );
                 })}
 
-                {campus?.edges?.map((edge, index) => {
-                  const a = campus.junctions.find((node) => node.id === edge.a);
-                  const b = campus.junctions.find((node) => node.id === edge.b);
+                {mode === 'satellite' && campus?.geometry?.filter((shape) => shape.type === 'leisure').map((shape) => (
+                  <polygon
+                    key={shape.id}
+                    points={shape.pts.map((point) => point.join(',')).join(' ')}
+                    fill={shape.kind === 'swimming_pool' ? 'rgba(70,150,175,0.35)' : 'rgba(255,255,255,0.05)'}
+                    stroke="rgba(255,255,255,0.55)"
+                    strokeWidth="0.0018"
+                  />
+                ))}
+
+                {paths?.edges?.map((edge, index) => {
+                  const a = paths.nodes?.[edge.a];
+                  const b = paths.nodes?.[edge.b];
                   if (!a?.pos || !b?.pos) return null;
-                  return <line key={index} x1={a.pos[0]} y1={a.pos[1]} x2={b.pos[0]} y2={b.pos[1]} stroke="#b6ae97" strokeWidth="0.005" strokeDasharray="0.012 0.009" opacity="0.6" />;
+                  if (mode === 'satellite' && (!insideDetail(a.pos) || !insideDetail(b.pos))) return null;
+                  const soft = edge.kind === 'service' || edge.kind === 'residential' || edge.kind === 'unclassified';
+                  return (
+                    <line
+                      key={index}
+                      x1={a.pos[0]}
+                      y1={a.pos[1]}
+                      x2={b.pos[0]}
+                      y2={b.pos[1]}
+                      stroke={mode === 'satellite' ? 'rgba(255,255,255,0.28)' : '#b6ae97'}
+                      strokeWidth={soft ? 0.0022 : 0.0034}
+                      opacity={soft ? 0.45 : 0.7}
+                    />
+                  );
                 })}
 
                 {routePoints.length > 1 && (
@@ -313,10 +655,6 @@ export default function MapPage() {
                   </>
                 )}
 
-                {campus?.junctions?.map((node) => (
-                  <circle key={node.id} cx={node.pos?.[0]} cy={node.pos?.[1]} r="0.005" fill="#8d846d" opacity="0.6" />
-                ))}
-
                 {places
                   .filter((place) => place.pos)
                   .map((place) => {
@@ -336,7 +674,7 @@ export default function MapPage() {
                         onMouseLeave={() => setHovered(null)}
                         onClick={(event) => {
                           event.stopPropagation();
-                          if (!drag?.moved) selectDestination(place.id);
+                          if (!suppressClickRef.current) selectDestination(place.id);
                         }}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
@@ -389,7 +727,13 @@ export default function MapPage() {
               <span><i style={{ background: '#0f6b4f' }} /> Destination</span>
               <span><i style={{ background: '#c97a45' }} /> Start</span>
               <span><i style={{ background: '#4766c7' }} /> Campus place</span>
-              <span className="map-legend-osm">{mode === '3d' ? 'Extruded from published footprints · heights are schematic' : 'Illustrated campus plan · not to scale'}</span>
+              <span className="map-legend-osm">
+                {mode === '3d'
+                  ? 'OSM footprints · imagery © Esri'
+                  : mode === 'satellite'
+                    ? 'Esri World Imagery · footprints © OpenStreetMap'
+                    : 'Illustrated plan · route metres are real'}
+              </span>
             </div>
 
             <div className="map-category-bar">
@@ -454,7 +798,7 @@ export default function MapPage() {
               <div className="route-pickers">
                 <label className="route-picker">
                   <span>Starting from</span>
-                  <select value={from} onChange={(event) => { setFrom(event.target.value); setRouteParam('from', event.target.value); }}>
+                  <select value={from} onChange={(event) => { const id = event.target.value; setFrom(id); setRouteParam('from', id); if (mode === '3d' && !streetRequested) requestPreset('route'); }}>
                     {places.map((place) => (
                       <option key={place.id} value={place.id}>{place.name}</option>
                     ))}
@@ -466,7 +810,7 @@ export default function MapPage() {
                 </button>
                 <label className="route-picker">
                   <span>Going to</span>
-                  <select value={to} onChange={(event) => { setTo(event.target.value); setRouteParam('to', event.target.value); }}>
+                  <select value={to} onChange={(event) => { const id = event.target.value; setTo(id); setRouteParam('to', id); if (mode === '3d' && !streetRequested) requestPreset('route'); }}>
                     {places.map((place) => (
                       <option key={place.id} value={place.id}>{place.name}</option>
                     ))}
@@ -486,6 +830,12 @@ export default function MapPage() {
                     <h3>{destination.name}</h3>
                     <p>{destination.description || 'A campus place from the Compass place list.'}</p>
                     {destination.floor && <small>Floor: {destination.floor}</small>}
+                    {destinationBuilding?.levels && (
+                      <small>
+                        {destinationBuilding.levels} floors
+                        {destinationBuilding.height ? ` · ${destinationBuilding.height} m` : ''} · {destinationBuilding.source}
+                      </small>
+                    )}
                   </div>
                 </div>
               )}
@@ -498,37 +848,72 @@ export default function MapPage() {
                       <b>{Math.round(route.meters)} m</b>
                       <span>about {route.minutes} min walk</span>
                     </div>
-                    <button type="button" className="btn subtle small" onClick={() => setPanelTab('photos')}>
-                      <Camera size={14} /> Landmarks
+                    <Badge tone="green">Shortest</Badge>
+                  </div>
+                  <RoutePreview
+                    points={route.points}
+                    from={source}
+                    to={destination}
+                    metres={route.meters}
+                    minutes={route.minutes}
+                    onOpen={() => {
+                      setMode('3d');
+                      setRouteParams({ view: '', street: '' });
+                      requestPreset('route');
+                    }}
+                  />
+                  <div className="route-actions">
+                    <button type="button" onClick={() => { setMode('3d'); setRouteParams({ view: '', street: '' }); requestPreset('route'); }}>
+                      <Layers3 size={13} /> 3D route
+                    </button>
+                    <button type="button" onClick={() => { setMode('3d'); setRouteParams({ view: '', street: '1' }); requestPreset('street'); }}>
+                      <Footprints size={13} /> Street view
                     </button>
                   </div>
-                  <ol className="route-steps">
+                  <div className="route-meta">
+                    <span><Route size={12} /> {route.steps.length - 1} turns · OpenStreetMap walk network</span>
+                    {route.connector && (route.connector.from > 8 || route.connector.to > 8) && (
+                      <span><Info size={12} /> Up to {Math.max(route.connector.from, route.connector.to)} m from a mapped path to the door</span>
+                    )}
+                    {route.alternative && (
+                      <span><ArrowLeftRight size={12} /> Longer alternative: {Math.round(route.alternative.meters)} m · {route.alternative.minutes} min</span>
+                    )}
+                  </div>
+                  <ol className="route-steps with-thumbs">
                     <li>
-                      <span className="step-marker start">A</span>
+                      <span className="step-thumb">
+                        <RouteMap points={source?.pos ? [source.pos] : []} compact padding={0.045} label={`Satellite view of ${source?.name || 'the starting point'}`} />
+                        <b className="step-thumb-index start">A</b>
+                      </span>
                       <div>
                         <b>Start at {source?.name || 'your location'}</b>
                         <small>{source?.description || 'Use the main gate as a safe default starting point.'}</small>
                       </div>
                     </li>
                     {route.steps.map((step, index) => (
-                      <li key={`${step.placeId || step.name}-${index}`}>
-                        <span className="step-marker">{index + 1}</span>
+                      <li key={`${step.instruction}-${index}`}>
+                        {step.points?.length ? (
+                          <span className="step-thumb">
+                            <RouteMap points={step.points} compact padding={0.03} label={`Satellite view of step ${index + 1}`} />
+                            <b className={`step-thumb-index ${step.turn === 'arrive' ? 'end' : ''}`}>
+                              {step.turn === 'arrive' ? <Check size={11} /> : index + 1}
+                            </b>
+                          </span>
+                        ) : (
+                          <span className={`step-marker ${step.turn === 'arrive' ? 'end' : ''}`}>
+                            {step.turn === 'arrive' ? <Check size={13} /> : index + 1}
+                          </span>
+                        )}
                         <div>
-                          <b>{step.name}</b>
-                          <small>{step.instruction}</small>
+                          <b>{step.instruction}</b>
+                          <small>
+                            {step.turn === 'arrive'
+                              ? destination?.description || 'Check campus signs at the building entrance.'
+                              : `${step.turn === 'left' ? 'Turn left' : step.turn === 'right' ? 'Turn right' : step.turn === 'start' ? 'Start' : 'Continue'} · ${Math.round(step.metres)} m · facing ${step.direction}`}
+                          </small>
                         </div>
-                        {step.photo && <img src={photoPath(step.photo)} alt="" loading="lazy" />}
                       </li>
                     ))}
-                    <li>
-                      <span className="step-marker end">
-                        <Check size={13} />
-                      </span>
-                      <div>
-                        <b>Arrive at {destination?.name}</b>
-                        <small>{destination?.description || 'Check campus signs at the building entrance.'}</small>
-                      </div>
-                    </li>
                   </ol>
                 </>
               ) : (
@@ -557,7 +942,8 @@ export default function MapPage() {
                 </div>
               )}
               <p className="map-disclaimer">
-                <Info size={13} /> Walking times assume a fit adult on paved paths. Route lines are graph estimates, not live turn-by-turn navigation.
+                <Info size={13} /> Distances follow the mapped walkable network. Indoor door-level routes and lift/stairs
+                choices are not published, so the last few metres to a room are indicative.
               </p>
             </div>
           )}

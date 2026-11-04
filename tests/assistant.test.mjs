@@ -16,6 +16,7 @@ const data = {
   syllabus: read('syllabus'),
   notices: read('notices'),
   campus: read('campus'),
+  campusPaths: read('campus-paths'),
   contacts: read('contacts'),
   sources: read('sources'),
   branches: read('branches'),
@@ -60,6 +61,16 @@ for (const [query, intent, pattern] of cases) {
     assert.match(answer.text, pattern);
   });
 }
+
+test('assistant route answers use the real walk graph and offer street view', () => {
+  const answer = ask('route from main gate to g block');
+  assert.equal(answer.intent, 'route');
+  assert.match(answer.text, /G-Block/);
+  assert.match(answer.text, /m.*min walk/);
+  assert.match(answer.text, /\d+\. .*/);
+  assert.ok(answer.actions.some((entry) => /street=1/.test(entry.path)));
+  assert.ok(answer.actions.some((entry) => /Open 3D route/.test(entry.label)));
+});
 
 test('assistant personalizes a first-year timetable with the mentoring group', () => {
   const studentProfile = {

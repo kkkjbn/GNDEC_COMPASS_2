@@ -55,8 +55,13 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          if (response.ok) caches.open(CACHE).then((cache) => cache.put('/index.html', response.clone()));
+        .then(async (response) => {
+          if (response.ok) {
+            // Clone synchronously, before the page starts consuming the body.
+            const copy = response.clone();
+            const cache = await caches.open(CACHE);
+            await cache.put('/index.html', copy).catch(() => {});
+          }
           return response;
         })
         .catch(() => caches.match('/index.html')),
@@ -67,14 +72,19 @@ self.addEventListener('fetch', (event) => {
   // Campus photos may live in the user-triggered offline media cache.
   if (url.pathname.startsWith('/img/')) {
     event.respondWith(
-      caches.match(request).then((cached) => {
+      caches.match(request).then(async (cached) => {
         if (cached) return cached;
-        return fetch(request)
-          .then((response) => {
-            if (response.ok) caches.open(CACHE).then((cache) => cache.put(request, response.clone()));
-            return response;
-          })
-          .catch(() => Response.error());
+        try {
+          const response = await fetch(request);
+          if (response.ok) {
+            const copy = response.clone();
+            const cache = await caches.open(CACHE);
+            await cache.put(request, copy).catch(() => {});
+          }
+          return response;
+        } catch {
+          return Response.error();
+        }
       }),
     );
     return;
@@ -88,19 +98,19 @@ self.addEventListener('fetch', (event) => {
 
   if (!cacheFirst) return;
 
+  // Content-hashed assets and versioned data are immutable inside one cache,
+  // so serving the cached copy is enough. The cache name changes per build.
   event.respondWith(
-    caches.open(CACHE).then(async (cache) => {
-      const cached = await cache.match(request);
-      const update = fetch(request).then((response) => {
-        if (response.ok) cache.put(request, response.clone());
-        return response;
-      });
-      if (cached) {
-        event.waitUntil(update.catch(() => {}));
-        return cached;
-      }
+    caches.match(request).then(async (cached) => {
+      if (cached) return cached;
       try {
-        return await update;
+        const response = await fetch(request);
+        if (response.ok) {
+          const copy = response.clone();
+          const cache = await caches.open(CACHE);
+          await cache.put(request, copy).catch(() => {});
+        }
+        return response;
       } catch {
         return Response.error();
       }

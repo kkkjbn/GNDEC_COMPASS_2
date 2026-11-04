@@ -852,7 +852,11 @@
   }
 
   .campus-svg {
-    height: clamp(330px, 54vh, 470px);
+    height: clamp(340px, 56vh, 520px);
+  }
+
+  .campus3d {
+    height: clamp(340px, 56vh, 520px);
   }
 
   .map-legend {

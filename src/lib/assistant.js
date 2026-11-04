@@ -752,7 +752,7 @@ function answerCourseAlias(course, data, nq) {
 }
 
 function answerPlace(place, data, nq, memory) {
-  const route = findRoute(data.campus, 'main-gate', place.id);
+  const route = findRoute(data.campus, 'main-gate', place.id, data.campusPaths);
   const lines = [
     `**${place.name}**`,
     place.description || 'This place is listed in the campus guide.',
@@ -776,7 +776,7 @@ function answerPlace(place, data, nq, memory) {
 
 function answerRoom(room, data, memory) {
   const place = roomPlace(room, data);
-  const route = place ? findRoute(data.campus, 'main-gate', place.id) : null;
+  const route = place ? findRoute(data.campus, 'main-gate', place.id, data.campusPaths) : null;
   return {
     intent: 'room',
     confidence: place ? 'medium' : 'low',
@@ -1564,13 +1564,25 @@ export function answerQuestion(raw, context = {}) {
     const destination = extracted.to || place;
     const origin = extracted.from || findPlace('main gate', data) || { id: 'main-gate' };
     if (destination) {
-      const route = findRoute(data.campus, origin?.id || 'main-gate', destination.id);
+      const route = findRoute(data.campus, origin?.id || 'main-gate', destination.id, data.campusPaths);
+      const steps = route?.steps?.filter((step) => step.turn !== 'arrive') || [];
       const lines = [
         `**${destination.name}**`,
         destination.description || '',
         route
-          ? `From **${origin?.name || 'Main Gate'}**: about **${Math.round(route.meters)} m** · **${route.minutes} min walk** (estimate, not a live route).\n${route.steps.slice(0, 4).map((step, index) => `${index + 1}. ${step.instruction}`).join('\n')}`
+          ? `From **${origin?.name || 'Main Gate'}**: about **${Math.round(route.meters)} m** · **${route.minutes} min walk** on the mapped footpath network.`
           : 'A route could not be calculated from the available campus graph.',
+        route?.alternative
+          ? `A longer, mapped alternative is about **${Math.round(route.alternative.meters)} m** · **${route.alternative.minutes} min**.`
+          : '',
+        steps.length
+          ? steps
+              .map((step, index) => `${index + 1}. ${step.instruction}${step.metres ? ` (${Math.round(step.metres)} m)` : ''}`)
+              .join('\n')
+          : '',
+        route?.connector && (route.connector.from > 8 || route.connector.to > 8)
+          ? `The doorway is up to **${Math.max(route.connector.from, route.connector.to)} m** from the mapped path; use the entrance signs for the last few metres.`
+          : '',
         route?.approx ? 'Route distances are approximate. Check campus signs and closures.' : '',
       ].filter(Boolean);
       return {
@@ -1578,8 +1590,8 @@ export function answerQuestion(raw, context = {}) {
         confidence: route?.verified ? 'high' : 'medium',
         text: lines.join('\n'),
         actions: [
-          action('Open photo-guided route', `/map?from=${origin?.id || 'main-gate'}&to=${destination.id}&guide=1`, 'map'),
-          action('See place photos', `/map?to=${destination.id}`, 'camera'),
+          action('Open 3D route', `/map?from=${origin?.id || 'main-gate'}&to=${destination.id}`, 'map'),
+          action('Street view of the route', `/map?from=${origin?.id || 'main-gate'}&to=${destination.id}&street=1`, 'map'),
         ],
         memory: { lastPlaceId: destination.id, lastIntent: 'route' },
       };

@@ -12,7 +12,7 @@ The repo/Worker split, and why the legacy stack should not be overwritten, is do
 
 - **Today** — current/next class, full-day timeline, next holiday and quick campus actions.
 - **Timetable** — 54 published section/subgroup records, day view, weekly grid, mobile week view, teacher and room schedules, section comparison and a free-room finder.
-- **Rasta Saathi map** — searchable illustrated campus map built from OpenStreetMap geometry, 45 places, category filters, walking routes, step directions and photo lightbox.
+- **Rasta Saathi map** — real 3D campus built from OpenStreetMap footprints, satellite imagery, 45 places, shortest walking routes on the mapped OSM footpath graph, turn-by-turn steps, ground distances in metres, a street-level preview, and photo/imagery guidance under the route panel.
 - **Students** — 1,146-record first-year public roster searchable by CRN, name, branch, section, subsection or mentor. Phone/email/address stay out of the public dataset.
 - **Faculty** — 272 public profiles with department filters, offices/HODs, timetable-only teachers and class schedules.
 - **Study hub** — 23 syllabus documents, 152 question banks, 1,600 indexed previous-year papers, exam notices, a seven-step exam planner and honest “no verified notes yet” messaging.
@@ -33,6 +33,8 @@ The repo/Worker split, and why the legacy stack should not be overwritten, is do
 | Faculty profiles | 272 | Public directory plus timetable-only teachers |
 | Rooms | 79 | Timetable room codes; block/floor inferred where not independently verified |
 | Campus places | 45 | OSM geometry plus public campus landmarks |
+| Mapped walk network | 606 nodes / 603 edges | OSM footpaths; shortest paths by Dijkstra in metres |
+| 3D building footprints | 176 | OSM footprint geometry with published levels/height where tagged |
 | Previous-year papers | 1,600 | Indexed links to the original PDFs; solutions not included |
 | Question banks | 152 | Public IT-department resources |
 | Syllabus documents | 23 | Scheme/session varies; match to your batch |
