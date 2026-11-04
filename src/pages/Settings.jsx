@@ -48,6 +48,8 @@ export default function Settings() {
     profile,
     theme,
     setTheme,
+    palette,
+    setPalette,
     online,
     bookmarks,
     toggleBookmark,
@@ -104,6 +106,7 @@ export default function Settings() {
       exportedAt: new Date().toISOString(),
       profile,
       theme,
+      palette,
       bookmarks,
       chatHistory,
       assistantMemory,
@@ -174,11 +177,12 @@ export default function Settings() {
           </Panel>
 
           <Panel>
-            <PanelHead eyebrow="APPEARANCE" title="Make it feel right" description="Dark mode uses a low-light palette. System follows your device setting." />
+            <PanelHead eyebrow="APPEARANCE" title="Make it feel right" description="Choose how Compass looks. Changes apply right away and stay saved on this device." />
+            <h3 className="settings-appearance-label">Display mode</h3>
             <div className="theme-grid">
               {[
-                { value: 'light', label: 'Light', note: 'Warm paper and ink', icon: Sun },
-                { value: 'dark', label: 'Dark', note: 'Low-light forest', icon: Moon },
+                { value: 'light', label: 'Light', note: 'Bright and clear', icon: Sun },
+                { value: 'dark', label: 'Dark', note: 'Soft charcoal', icon: Moon },
                 { value: 'system', label: 'System', note: 'Match this device', icon: Monitor },
               ].map((option) => (
                 <button type="button" key={option.value} className={`theme-option ${selectedTheme === option.value ? 'active' : ''}`} onClick={() => setTheme(option.value)}>
@@ -197,6 +201,37 @@ export default function Settings() {
                       <Check size={12} />
                     </span>
                   )}
+                </button>
+              ))}
+            </div>
+            <div className="settings-palette-heading">
+              <div>
+                <h3 className="settings-appearance-label">Color palette</h3>
+                <p>Heritage restores the earlier Compass color grading.</p>
+              </div>
+              <span className="settings-active-palette">{palette}</span>
+            </div>
+            <div className="palette-grid">
+              {[
+                { value: 'classic', label: 'Classic', note: 'Teal & warm neutrals', colors: ['#174d45', '#a9553b', '#f4f6f3'] },
+                { value: 'heritage', label: 'Heritage', note: 'Previous color grading', colors: ['#14483a', '#bd6a3d', '#f4efdf'] },
+                { value: 'sage', label: 'Sage', note: 'Calm garden greens', colors: ['#376b50', '#ae7449', '#eff4ed'] },
+                { value: 'ocean', label: 'Ocean', note: 'Blue & sea glass', colors: ['#245b82', '#208b91', '#edf4f8'] },
+                { value: 'berry', label: 'Berry', note: 'Plum & warm rose', colors: ['#704367', '#b35f66', '#f7eff3'] },
+                { value: 'slate', label: 'Slate', note: 'Cool neutral & indigo', colors: ['#485b78', '#7185aa', '#f0f2f7'] },
+              ].map((option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={`palette-option ${palette === option.value ? 'active' : ''}`}
+                  onClick={() => setPalette(option.value)}
+                  aria-pressed={palette === option.value}
+                >
+                  <span className="palette-swatches" aria-hidden="true">
+                    {option.colors.map((color) => <i key={color} style={{ '--swatch': color }} />)}
+                  </span>
+                  <span className="palette-option-copy"><b>{option.label}</b><small>{option.note}</small></span>
+                  {palette === option.value && <span className="palette-selected"><Check size={13} /> Selected</span>}
                 </button>
               ))}
             </div>

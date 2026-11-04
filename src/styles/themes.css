@@ -1,0 +1,421 @@
+/* Palette tokens. Heritage preserves the earlier Compass color treatment. */
+:root[data-palette='classic'] {
+  --green: #174d45;
+  --green-2: #197363;
+  --green-3: #319785;
+  --green-ink: #071f1c;
+  --green-wash: #e4f2ef;
+  --terra: #a9553b;
+  --terra-soft: #f4e6e0;
+  --blue: #426d9c;
+  --blue-soft: #e7eef7;
+  --ambient-a: rgba(49, 151, 133, 0.08);
+  --ambient-b: rgba(66, 109, 156, 0.06);
+}
+
+:root[data-palette='sage'] {
+  --green: #335c43;
+  --green-2: #4e805b;
+  --green-3: #73a47b;
+  --green-ink: #122419;
+  --green-wash: #e7f0e6;
+  --terra: #a56943;
+  --terra-soft: #f3e9df;
+  --blue: #627b91;
+  --blue-soft: #e9eef1;
+  --ambient-a: rgba(115, 164, 123, 0.1);
+  --ambient-b: rgba(98, 123, 145, 0.06);
+}
+
+:root[data-palette='ocean'] {
+  --green: #164c70;
+  --green-2: #216d91;
+  --green-3: #3b9bb0;
+  --green-ink: #071d2a;
+  --green-wash: #e1eff5;
+  --terra: #ad6548;
+  --terra-soft: #f5e9e2;
+  --blue: #456bb0;
+  --blue-soft: #e7edf9;
+  --ambient-a: rgba(59, 155, 176, 0.1);
+  --ambient-b: rgba(69, 107, 176, 0.07);
+}
+
+:root[data-palette='berry'] {
+  --green: #56344f;
+  --green-2: #805579;
+  --green-3: #a8759b;
+  --green-ink: #241522;
+  --green-wash: #f1e8f0;
+  --terra: #ad5c65;
+  --terra-soft: #f6e7e9;
+  --blue: #6479a6;
+  --blue-soft: #eaedf6;
+  --ambient-a: rgba(168, 117, 155, 0.09);
+  --ambient-b: rgba(100, 121, 166, 0.06);
+}
+
+:root[data-palette='slate'] {
+  --green: #3b4f6e;
+  --green-2: #566f96;
+  --green-3: #748db5;
+  --green-ink: #172131;
+  --green-wash: #e9edf4;
+  --terra: #a2654c;
+  --terra-soft: #f3e9e4;
+  --blue: #536d9f;
+  --blue-soft: #e7ebf4;
+  --ambient-a: rgba(116, 141, 181, 0.1);
+  --ambient-b: rgba(83, 109, 159, 0.07);
+}
+
+:root[data-palette='heritage'] {
+  --bg: #f4f6f3;
+  --bg-deep: #e9edea;
+  --paper: #fff;
+  --paper-2: #fff;
+  --paper-3: #f1f5f2;
+  --ink: #15221c;
+  --ink-soft: #36473f;
+  --muted: #5f6d66;
+  --muted-2: #8b9891;
+  --line: #dfe6e1;
+  --line-soft: #edf2ee;
+  --green: #0d3a2c;
+  --green-2: #12624a;
+  --green-3: #1c8160;
+  --green-ink: #062219;
+  --green-wash: #e6f2eb;
+  --terra: #9b5633;
+  --terra-soft: #f3e6dd;
+  --gold: #9a7a2f;
+  --gold-soft: #f4eeda;
+  --blue: #3f619c;
+  --blue-soft: #e6ecf7;
+  --red: #b04b41;
+  --red-soft: #f6e4e1;
+}
+
+:root[data-theme='dark'][data-palette='classic'] {
+  --green: #19463f;
+  --green-2: #267c6c;
+  --green-3: #5fc2a7;
+  --green-ink: #071a16;
+  --green-wash: #1b302d;
+  --terra: #e6a083;
+  --terra-soft: #372722;
+  --blue: #9bb9eb;
+  --blue-soft: #202e40;
+  --ambient-a: rgba(95, 194, 167, 0.08);
+  --ambient-b: rgba(155, 185, 235, 0.06);
+}
+
+:root[data-theme='dark'][data-palette='sage'] {
+  --green: #284b37;
+  --green-2: #548560;
+  --green-3: #8fc197;
+  --green-ink: #101c14;
+  --green-wash: #24352b;
+  --terra: #d8a078;
+  --terra-soft: #382b23;
+  --blue: #a5bfcc;
+  --blue-soft: #25323a;
+  --ambient-a: rgba(143, 193, 151, 0.08);
+  --ambient-b: rgba(165, 191, 204, 0.05);
+}
+
+:root[data-theme='dark'][data-palette='ocean'] {
+  --green: #163e57;
+  --green-2: #287a98;
+  --green-3: #58c1cc;
+  --green-ink: #081820;
+  --green-wash: #1d303a;
+  --terra: #e3a07c;
+  --terra-soft: #392a24;
+  --blue: #9db9ed;
+  --blue-soft: #222e43;
+  --ambient-a: rgba(88, 193, 204, 0.08);
+  --ambient-b: rgba(157, 185, 237, 0.06);
+}
+
+:root[data-theme='dark'][data-palette='berry'] {
+  --green: #4b3348;
+  --green-2: #865b7c;
+  --green-3: #d59bc5;
+  --green-ink: #20151e;
+  --green-wash: #332633;
+  --terra: #e59391;
+  --terra-soft: #3b282a;
+  --blue: #a8b5df;
+  --blue-soft: #272d40;
+  --ambient-a: rgba(213, 155, 197, 0.08);
+  --ambient-b: rgba(168, 181, 223, 0.05);
+}
+
+:root[data-theme='dark'][data-palette='slate'] {
+  --green: #34465f;
+  --green-2: #5d78a0;
+  --green-3: #98b1d7;
+  --green-ink: #141d2a;
+  --green-wash: #242e3d;
+  --terra: #d59b7d;
+  --terra-soft: #352923;
+  --blue: #a5b9e3;
+  --blue-soft: #252e40;
+  --ambient-a: rgba(152, 177, 215, 0.08);
+  --ambient-b: rgba(165, 185, 227, 0.05);
+}
+
+:root[data-theme='dark'][data-palette='heritage'] {
+  --bg: #0b110e;
+  --bg-deep: #070b09;
+  --paper: #121a16;
+  --paper-2: #16211c;
+  --paper-3: #0f1713;
+  --ink: #eef3ee;
+  --ink-soft: #cad5ce;
+  --muted: #98a69e;
+  --muted-2: #7a887f;
+  --line: #28362f;
+  --line-soft: #1f2a24;
+  --green: #1c5c46;
+  --green-2: #2b8165;
+  --green-3: #47a686;
+  --green-ink: #06130e;
+  --green-wash: #182a22;
+  --terra: #d98f65;
+  --terra-soft: #2f231d;
+  --gold: #cfae63;
+  --gold-soft: #2b271b;
+  --blue: #86a2d8;
+  --blue-soft: #1b2537;
+  --red: #e18478;
+  --red-soft: #34211e;
+}
+
+body::before,
+[data-theme='dark'] body::before {
+  background:
+    radial-gradient(900px 500px at 78% -10%, var(--ambient-a, rgba(28, 129, 96, 0.07)), transparent 65%),
+    radial-gradient(700px 460px at 0% 100%, var(--ambient-b, rgba(63, 97, 156, 0.06)), transparent 70%);
+}
+
+.settings-appearance-label {
+  margin: 17px 0 9px;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.theme-grid {
+  gap: 10px;
+}
+
+.theme-option {
+  min-height: 112px;
+  padding: 10px;
+  border-radius: 12px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.theme-option:hover {
+  transform: translateY(-1px);
+}
+
+.theme-option.active {
+  border-color: var(--green-3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green-3) 18%, transparent);
+}
+
+.settings-palette-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.settings-palette-heading .settings-appearance-label {
+  margin: 0 0 4px;
+}
+
+.settings-palette-heading p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.settings-active-palette {
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.palette-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 11px;
+  min-width: 0;
+  min-height: 86px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--paper-2);
+  color: var(--ink);
+  text-align: left;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.palette-option:hover {
+  border-color: var(--green-3);
+  transform: translateY(-1px);
+}
+
+.palette-option.active {
+  border-color: var(--green-3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green-3) 18%, transparent);
+}
+
+.palette-swatches {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 5px;
+}
+
+.palette-swatches i {
+  width: 25px;
+  height: 15px;
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 99px;
+  background: var(--swatch);
+}
+
+.palette-option-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.palette-option-copy b {
+  font-size: 13px;
+}
+
+.palette-option-copy small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.palette-selected {
+  display: inline-flex;
+  align-items: center;
+  align-self: end;
+  gap: 3px;
+  color: var(--green-3);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .theme-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .theme-option {
+    padding: 8px 6px;
+  }
+
+  .theme-option-copy {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .theme-option-copy svg {
+    display: none;
+  }
+
+  .theme-option-copy small {
+    grid-column: 1;
+  }
+
+  .palette-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .palette-option {
+    padding: 10px;
+  }
+}
+
+/* These small rules keep layouts usable when browser zoom narrows the CSS viewport. */
+main,
+.page,
+.panel,
+.panel-head,
+.settings-layout,
+.settings-main,
+.settings-side,
+.today-grid,
+.map-layout,
+.ask-layout,
+.timetable-layout {
+  min-width: 0;
+}
+
+.page {
+  width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn,
+  .icon-btn,
+  .theme-option,
+  .palette-option {
+    transition-duration: 160ms;
+  }
+}
+
+@media (pointer: coarse) {
+  .icon-btn,
+  .icon-link {
+    width: 44px;
+    height: 44px;
+  }
+
+  .btn.small {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 380px) {
+  .palette-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-palette-heading {
+    align-items: flex-start;
+  }
+
+  .settings-active-palette {
+    flex: none;
+  }
+}

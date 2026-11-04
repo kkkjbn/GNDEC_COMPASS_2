@@ -83,6 +83,12 @@ function resolveTheme(theme, deviceDark) {
   return deviceDark ? 'dark' : 'light';
 }
 
+const AVAILABLE_PALETTES = ['classic', 'heritage', 'sage', 'ocean', 'berry', 'slate'];
+
+function resolvePalette(value) {
+  return AVAILABLE_PALETTES.includes(value) ? value : 'classic';
+}
+
 export function AppProvider({ children }) {
   const [rawData, setRawData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -90,6 +96,7 @@ export function AppProvider({ children }) {
   const [online, setOnline] = useState(() => navigator.onLine);
   const [profile, setProfileState] = useState(() => ({ ...defaultProfile, ...readStorage('compass2.profile', {}) }));
   const [theme, setThemeState] = useState(() => readStorage('compass2.theme', 'system'));
+  const [palette, setPaletteState] = useState(() => resolvePalette(readStorage('compass2.palette', 'classic')));
   const [deviceDark, setDeviceDark] = useState(systemPrefersDark);
   const resolvedTheme = resolveTheme(theme, deviceDark);
   const [bookmarks, setBookmarks] = useState(() => readStorage('compass2.bookmarks', []));
@@ -150,8 +157,9 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.dataset.theme = resolvedTheme;
+    document.documentElement.dataset.palette = palette;
     document.documentElement.style.colorScheme = resolvedTheme;
-  }, [resolvedTheme]);
+  }, [resolvedTheme, palette]);
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return undefined;
@@ -232,6 +240,12 @@ export function AppProvider({ children }) {
   const setTheme = useCallback((value) => {
     setThemeState(value);
     writeStorage('compass2.theme', value);
+  }, []);
+
+  const setPalette = useCallback((value) => {
+    const next = resolvePalette(value);
+    setPaletteState(next);
+    writeStorage('compass2.palette', next);
   }, []);
 
   const toggleBookmark = useCallback(
@@ -327,6 +341,8 @@ export function AppProvider({ children }) {
       setProfile,
       theme,
       setTheme,
+      palette,
+      setPalette,
       resolvedTheme,
       bookmarks,
       toggleBookmark,
@@ -357,6 +373,8 @@ export function AppProvider({ children }) {
       setProfile,
       theme,
       setTheme,
+      palette,
+      setPalette,
       resolvedTheme,
       bookmarks,
       toggleBookmark,

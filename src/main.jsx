@@ -7,6 +7,7 @@ import './styles/app-pages.css';
 import './styles/admin.css';
 import './styles/banners.css';
 import './styles/responsive.css';
+import './styles/themes.css';
 import { AppProvider, useApp } from './context.jsx';
 import { RouterProvider, useRouter, routeTitle } from './lib/router.jsx';
 import { Shell } from './components/Shell.jsx';
