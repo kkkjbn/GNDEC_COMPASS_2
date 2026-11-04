@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { findRoute, distanceMeters } from '../src/lib/campus.js';
 import { clampView, panView, pointsViewBox, viewTransform, zoomView } from '../src/lib/viewport.js';
+import { orbitProject, screenToGround, zoomTargetAboutGround } from '../src/lib/camera3d.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (name) => JSON.parse(fs.readFileSync(path.join(root, 'public', 'data', `${name}.json`), 'utf8'));
@@ -26,6 +27,37 @@ test('map zoom keeps the point under the cursor fixed', () => {
   const after = toWorld(point, next);
   assert.ok(Math.abs(before.x - after.x) < 0.001);
   assert.ok(Math.abs(before.y - after.y) < 0.001);
+});
+
+test('3D wheel zoom keeps the ground point under the cursor fixed', () => {
+  const cam = { mode: 'orbit', yaw: -0.62, pitch: 0.76, dist: 1460, fov: 38, tx: 0, tz: 0 };
+  const width = 1000;
+  const height = 700;
+  const cursor = { x: 735, y: 455 };
+  const ground = screenToGround(cam, width, height, cursor.x, cursor.y);
+  assert.ok(ground, 'expected a ground point under the cursor');
+  assert.ok(Math.abs(ground[0]) < 1400 && Math.abs(ground[1]) < 1400);
+
+  const nextDist = 760;
+  const [tx, tz] = zoomTargetAboutGround(cam, ground, nextDist);
+  const projected = orbitProject(
+    { ...cam, tx, tz, dist: nextDist },
+    width,
+    height,
+    ground[0],
+    0,
+    ground[1],
+  );
+  assert.ok(projected, 'expected the ground point to stay in front of the camera');
+  assert.ok(Math.abs(projected[0] - cursor.x) < 0.01, `x drifted by ${projected[0] - cursor.x}`);
+  assert.ok(Math.abs(projected[1] - cursor.y) < 0.01, `y drifted by ${projected[1] - cursor.y}`);
+
+  // Zooming centre-screen does not move the target.
+  const centreGround = screenToGround(cam, width, height, width / 2, height / 2);
+  assert.ok(centreGround);
+  const centred = zoomTargetAboutGround(cam, centreGround, nextDist);
+  assert.ok(Math.abs(centred[0] - cam.tx) < 0.01);
+  assert.ok(Math.abs(centred[1] - cam.tz) < 0.01);
 });
 
 test('map pan and zoom are clamped to the frame', () => {

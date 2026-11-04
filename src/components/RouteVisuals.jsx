@@ -57,7 +57,7 @@ export function RouteMap({ points, aspect = 2.1, padding = 0.03, compact = false
           <polyline
             points={path}
             fill="none"
-            stroke="#0f6b4f"
+            stroke={compact ? '#26b57f' : '#0f6b4f'}
             strokeWidth={line}
             strokeLinecap="round"
             strokeLinejoin="round"

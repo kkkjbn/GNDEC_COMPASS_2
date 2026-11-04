@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { norm } from '../lib/utils.js';
 import { SATELLITE_CONTEXT, SATELLITE_DETAIL } from '../lib/map-bounds.js';
+import { MAX_DIST, MIN_DIST, screenToGround as orbitGround, zoomLabelFor, zoomTargetAboutGround } from '../lib/camera3d.js';
 
 /**
  * Perspective 3D model of the real GNDEC campus.
@@ -199,14 +200,24 @@ function makeSample(image, targetWidth = 360) {
 
 const wallStyle = (shape) => {
   const name = shape.name || '';
-  if (/library/i.test(name)) return { wall: '#d8c9ad', roof: '#8f8a7d' };
-  if (/sports|gym|stadium/i.test(name)) return { wall: '#d2d0c4', roof: '#9a9a8e' };
-  if (/hostel|mess/i.test(name)) return { wall: '#dcc9a4', roof: '#a39a86' };
-  if (/workshop|industrial|automobile|cdrt/i.test(name) || shape.kind === 'industrial') {
-    return { wall: '#c9c6b6', roof: '#87877c' };
+  // Facade colours taken from the real campus photographs in public/img:
+  // red-brick teaching blocks with cream floor bands, cream hostels and
+  // bungalows, grey workshops/sports halls, and a cream-and-brick main gate.
+  if (/main gate|north gate|west gate|south gate|\bgate\b/i.test(name)) {
+    return { wall: '#efe3c8', roof: '#5d625d', band: '#a64d3c' };
   }
-  if (/admin|academic|dept|block|library/i.test(name)) return { wall: '#d9c9ae', roof: '#938d7f' };
-  return { wall: '#d3c5ac', roof: '#948e80' };
+  if (/library/i.test(name)) return { wall: '#c06a55', roof: '#77736a', band: '#f0e4cb' };
+  if (/acedemic|academic|admin|dept|department|block|lecture|class|production|engineering|polytechnic|college|institute|school/i.test(name)) {
+    return { wall: '#b25b49', roof: '#6f6c64', band: '#efe3c8' };
+  }
+  if (/hostel|mess/i.test(name)) return { wall: '#e2cfa8', roof: '#918a7b', band: '#b45d47' };
+  if (/sports|gym|stadium|court|ground|pool/i.test(name)) return { wall: '#d6d1c4', roof: '#83867e', band: '#a9a294' };
+  if (/workshop|industrial|automobile|cdrt|maintenance|testing|consultancy/i.test(name) || shape.kind === 'industrial') {
+    return { wall: '#bdb8a8', roof: '#777970', band: '#8b887a' };
+  }
+  if (/auditorium|theatre/i.test(name)) return { wall: '#cbbfa6', roof: '#777268', band: '#9f4d3d' };
+  if (/bungalow|principal|director/i.test(name)) return { wall: '#e8dcc2', roof: '#8b877b', band: '#a86a4f' };
+  return { wall: '#d3c5ac', roof: '#948e80', band: '#a9633f' };
 };
 
 const niceScale = (metres) => {
@@ -269,6 +280,26 @@ export default function Campus3D({
     const buildings = [];
     const flats = [];
 
+    // Many real OSM footprints are unnamed. Match each one to the nearest
+    // curated campus place so the facade palette follows what the building is
+    // (red-brick teaching block, cream hostel, grey workshop) instead of
+    // falling back to one generic colour.
+    const curatedPlaces = (places || [])
+      .filter((place) => Array.isArray(place.pos))
+      .map((place) => ({ name: place.name || '', pos: place.pos }));
+    const nameFor = (shape) => {
+      if ((shape.name || '').trim().length > 2) return shape.name;
+      let best = null;
+      for (const place of curatedPlaces) {
+        const metres = Math.hypot(
+          (shape.centroid[0] - place.pos[0]) * METRES_X,
+          (shape.centroid[1] - place.pos[1]) * METRES_Z,
+        );
+        if (metres < 42 && (!best || metres < best.metres)) best = { name: place.name, metres };
+      }
+      return best?.name || shape.name;
+    };
+
     for (const shape of all) {
       if (OFF_CAMPUS.test(shape.name || '')) continue;
       // Only model geometry that the satellite export actually covers. OSM
@@ -293,7 +324,7 @@ export default function Campus3D({
       const height = plausibleHeight
         ? taggedHeight
         : Math.round((levels * FLOOR_HEIGHT + 0.7) * 10) / 10;
-      const style = wallStyle(shape);
+      const style = wallStyle({ ...shape, name: nameFor(shape) });
       buildings.push({
         ...shape,
         height,
@@ -302,6 +333,7 @@ export default function Campus3D({
         heightSource: plausibleHeight ? 'osm' : meta?.levels ? 'levels' : 'estimate',
         wall: style.wall,
         roof: style.roof,
+        band: style.band,
         roofShape: meta?.roofShape || '',
         meta,
       });
@@ -324,7 +356,7 @@ export default function Campus3D({
       flats: dedupedFlats,
       boundary: boundary?.pts || null,
     };
-  }, [campus, detail]);
+  }, [campus, detail, places]);
 
   const placeIndex = useMemo(
     () =>
@@ -1127,27 +1159,57 @@ export default function Campus3D({
       if (goal.mode === 'walk') {
         goal.fov = clamp(goal.fov / factor, 26, 88);
       } else {
-        goal.dist = clamp(goal.dist / factor, 120, 5200);
-        setZoomLabel(Math.round((1460 / goal.dist) * 100));
+        goal.dist = clamp(goal.dist / factor, MIN_DIST, MAX_DIST);
+        setZoomLabel(zoomLabelFor(goal.dist));
       }
       runCameraMotion();
     },
     [runCameraMotion],
   );
 
+  // Convert a screen position to the point on the ground plane (y = 0) under
+  // it. Used so wheel zoom keeps the campus point under the cursor fixed
+  // instead of always zooming towards the middle of the screen.
+  const screenToGround = useCallback((clientX, clientY) => {
+    const cam = cameraRef.current;
+    const wrap = wrapRef.current;
+    if (!wrap || cam.mode === 'walk') return null;
+    const rect = wrap.getBoundingClientRect();
+    return orbitGround(cam, rect.width, rect.height, clientX - rect.left, clientY - rect.top);
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     const onWheel = (event) => {
       event.preventDefault();
-      setZoom(Math.exp(-event.deltaY * 0.0011));
+      const factor = Math.exp(-event.deltaY * 0.0011);
+      const cam = cameraRef.current;
+      const goal = targetRef.current;
+      if (cam.mode === 'walk') {
+        setZoom(factor);
+        return;
+      }
+      const nextDist = clamp(goal.dist / factor, MIN_DIST, MAX_DIST);
+      const ground = screenToGround(event.clientX, event.clientY);
+      if (ground && cam.dist > 1) {
+        // Scale the camera target about the ground point under the cursor. The
+        // eye then stays on the same line through that point, so the clicked
+        // spot keeps the same pixel position while the map zooms.
+        const [tx, tz] = zoomTargetAboutGround(cam, ground, nextDist);
+        goal.tx = clamp(tx, -1400, 1400);
+        goal.tz = clamp(tz, -1400, 1400);
+      }
+      goal.dist = nextDist;
+      setZoomLabel(zoomLabelFor(nextDist));
+      runCameraMotion();
     };
     canvas.addEventListener('wheel', onWheel, { passive: false });
     return () => canvas.removeEventListener('wheel', onWheel);
-  }, [setZoom]);
+  }, [screenToGround, setZoom, runCameraMotion]);
 
   const applyPreset = useCallback(
-    (name) => {
+    (name, extra = {}) => {
       const cam = cameraRef.current;
       const goal = targetRef.current;
       setPreset(name);
@@ -1163,6 +1225,21 @@ export default function Campus3D({
       } else if (name === 'east') {
         Object.assign(goal, { mode: 'orbit', yaw: -Math.PI / 2, pitch: 0.52, dist: 960, fov: 42, tx: 0, tz: 0, eye: null });
         setZoomLabel(152);
+      } else if (name === 'focus') {
+        // Click-to-focus: centre the camera on the clicked place or ground
+        // point and move closer without snapping away to the route centre.
+        const target = extra?.placeId
+          ? placeIndex.find((place) => place.id === extra.placeId)
+          : null;
+        const pos = target?.pos || extra?.world || null;
+        if (Array.isArray(pos)) {
+          const [tx, tz] = world(pos);
+          const yaw = cam.mode === 'orbit' ? cam.yaw : -0.62;
+          const pitch = cam.mode === 'orbit' ? cam.pitch : 0.76;
+          const dist = clamp(Math.min(goal.dist, 820), 380, 1200);
+          Object.assign(goal, { mode: 'orbit', yaw, pitch, dist, fov: 38, tx, tz, eye: null });
+          setZoomLabel(zoomLabelFor(dist));
+        }
       } else if (name === 'route') {
         if (routePoints.length > 1) {
           const xs = routePoints.map((point) => point[0]);
@@ -1183,7 +1260,7 @@ export default function Campus3D({
             3200,
           );
           Object.assign(goal, { mode: 'orbit', yaw: -0.55, pitch: 0.72, dist, fov: 38, tx, tz, eye: null });
-          setZoomLabel(Math.round((1460 / dist) * 100));
+          setZoomLabel(zoomLabelFor(dist));
         } else {
           Object.assign(goal, { mode: 'orbit', yaw: -0.62, pitch: 0.76, dist: 1460, fov: 38, tx: 0, tz: 0, eye: null });
           setZoomLabel(100);
@@ -1284,7 +1361,7 @@ export default function Campus3D({
   useEffect(() => {
     if (!command?.id || commandRef.current === command.id) return;
     commandRef.current = command.id;
-    applyPreset(command.name);
+    applyPreset(command.name, command);
   }, [command, applyPreset]);
 
   // Leaving Street mode through the map's mode switch should fly back out to
@@ -1419,9 +1496,20 @@ export default function Campus3D({
     for (const top of ordered) {
       if (!pointInPolygon(x, y, top.points)) continue;
       const place = matchPlace(top.shape);
-      if (place) onSelect?.(place.id);
+      if (place) {
+        onSelect?.(place.id);
+      } else if (Array.isArray(top.shape.centroid)) {
+        applyPreset('focus', { world: top.shape.centroid });
+      }
       return;
     }
+
+    // Clicking open ground focuses that spot too, so a click followed by the
+    // + button zooms into the area the user actually picked.
+    const ground = screenToGround(event.clientX, event.clientY);
+    if (!ground) return;
+    const point = [ground[0] / METRES_X + 0.5, ground[1] / METRES_Z + 0.5];
+    if (insideFrame(point, 0.06)) applyPreset('focus', { world: point });
   };
 
   if (!campus?.geometry?.length) {
@@ -1439,7 +1527,7 @@ export default function Campus3D({
         ref={canvasRef}
         className="campus3d-canvas"
         role="img"
-        aria-label="Interactive 3D model of the GNDEC campus. Drag to rotate, shift-drag to pan, scroll to zoom, and select a building for directions."
+        aria-label="Interactive 3D model of the GNDEC campus. Drag to rotate, shift-drag to pan, scroll to zoom towards the cursor, and click a building to focus it and select directions."
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -1465,7 +1553,7 @@ export default function Campus3D({
         </button>
       </div>
 
-      <div className="campus3d-hint">Drag to orbit · shift-drag to pan · scroll to zoom</div>
+      <div className="campus3d-hint">Scroll to zoom at the cursor · click any spot to focus · drag to orbit · shift-drag to pan</div>
 
       <div className="campus3d-controls">
         <button type="button" className="icon-btn" onClick={() => setZoom(1.3)} aria-label="Zoom in">
@@ -1532,9 +1620,10 @@ function drawFacade(ctx, face, palette, zoom) {
   ctx.closePath();
   ctx.clip();
 
-  // Real number of floor bands from the OSM level count.
+  // Real number of floor bands from the OSM level count, tinted with the
+  // building's own trim colour (cream bands on red brick, brick bands on cream).
   if (levels > 1) {
-    ctx.fillStyle = palette.band;
+    ctx.fillStyle = shape.band || palette.band;
     ctx.globalAlpha = 0.55;
     for (let floor = 1; floor < levels; floor += 1) {
       const v = floor / levels;

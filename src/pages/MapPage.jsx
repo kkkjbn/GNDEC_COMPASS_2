@@ -197,13 +197,23 @@ export default function MapPage() {
 
   const setRouteParam = (key, value) => setRouteParams({ [key]: value });
 
-  const requestPreset = (name) => setCameraCommand({ name, id: `${Date.now()}-${Math.random()}` });
+  const requestPreset = (name, extra = {}) => setCameraCommand({ name, ...extra, id: `${Date.now()}-${Math.random()}` });
 
-  const selectDestination = (id) => {
+  const selectDestination = (id, { fromMap = false } = {}) => {
     setTo(id);
     setRouteParam('to', id);
     setPanelTab('directions');
-    if (mode === '3d' && !streetRequested) requestPreset('route');
+    if (mode === '3d' && !streetRequested) {
+      if (fromMap) {
+        // A direct click on the 3D map should keep the camera where the user
+        // clicked. Mark the initial route framing as spent so the new route
+        // URL does not pull the camera away to the route centre.
+        framedRouteRef.current = true;
+        requestPreset('focus', { placeId: id });
+      } else {
+        requestPreset('route');
+      }
+    }
   };
 
   const swap = () => {
@@ -520,7 +530,7 @@ export default function MapPage() {
                 street={streetRequested}
                 command={cameraCommand}
                 onPreset={(name) => setRouteParams({ street: name === 'street' ? '1' : '' })}
-                onSelect={(id) => selectDestination(id)}
+                onSelect={(id) => selectDestination(id, { fromMap: true })}
               />
             ) : (
             <svg
@@ -549,41 +559,41 @@ export default function MapPage() {
               </defs>
 
               <rect x={frame.x} y={frame.y} width={frame.width} height={frame.height} fill={mode === 'satellite' ? '#2c3a2a' : '#f4f0e3'} />
-              {mode === 'satellite' && (
-                <>
-                  <image
-                    href={SATELLITE_CONTEXT.src}
-                    x={SATELLITE_CONTEXT.x}
-                    y={SATELLITE_CONTEXT.y}
-                    width={SATELLITE_CONTEXT.width}
-                    height={SATELLITE_CONTEXT.height}
-                    preserveAspectRatio="none"
-                  />
-                  <image
-                    href={SATELLITE_DETAIL.src}
-                    x={SATELLITE_DETAIL.x}
-                    y={SATELLITE_DETAIL.y}
-                    width={SATELLITE_DETAIL.width}
-                    height={SATELLITE_DETAIL.height}
-                    preserveAspectRatio="none"
-                  />
-                  <rect
-                    x={SATELLITE_DETAIL.x}
-                    y={SATELLITE_DETAIL.y}
-                    width={SATELLITE_DETAIL.width}
-                    height={SATELLITE_DETAIL.height}
-                    fill="none"
-                    stroke="rgba(255,255,255,0.18)"
-                    strokeWidth="0.0025"
-                  />
-                </>
-              )}
-              {mode === 'plan' && <rect x={PLAN_VIEW.x} y={PLAN_VIEW.y} width={PLAN_VIEW.width} height={PLAN_VIEW.height} fill="url(#map-grid)" />}
 
               <g
                 transform={viewTransform(view, frame)}
                 className="map-zoom"
               >
+                {mode === 'satellite' && (
+                  <>
+                    <image
+                      href={SATELLITE_CONTEXT.src}
+                      x={SATELLITE_CONTEXT.x}
+                      y={SATELLITE_CONTEXT.y}
+                      width={SATELLITE_CONTEXT.width}
+                      height={SATELLITE_CONTEXT.height}
+                      preserveAspectRatio="none"
+                    />
+                    <image
+                      href={SATELLITE_DETAIL.src}
+                      x={SATELLITE_DETAIL.x}
+                      y={SATELLITE_DETAIL.y}
+                      width={SATELLITE_DETAIL.width}
+                      height={SATELLITE_DETAIL.height}
+                      preserveAspectRatio="none"
+                    />
+                    <rect
+                      x={SATELLITE_DETAIL.x}
+                      y={SATELLITE_DETAIL.y}
+                      width={SATELLITE_DETAIL.width}
+                      height={SATELLITE_DETAIL.height}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.18)"
+                      strokeWidth="0.0025"
+                    />
+                  </>
+                )}
+                {mode === 'plan' && <rect x={PLAN_VIEW.x} y={PLAN_VIEW.y} width={PLAN_VIEW.width} height={PLAN_VIEW.height} fill="url(#map-grid)" />}
                 {mode === 'plan' && campus?.geometry?.map((shape) => {
                   const leisure = shape.type === 'leisure';
                   const isPool = shape.kind === 'swimming_pool';

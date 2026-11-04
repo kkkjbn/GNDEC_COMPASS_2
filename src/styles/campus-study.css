@@ -160,7 +160,15 @@
 }
 
 .map-canvas-wrap.is-3d .campus3d-controls .icon-btn {
-  color: #cfe0d5;
+  color: #e8f3ec;
+  background: rgba(20, 34, 27, 0.9);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.map-canvas-wrap.is-3d .campus3d-controls .icon-btn:hover {
+  background: rgba(28, 65, 50, 0.96);
+  border-color: rgba(143, 227, 185, 0.65);
+  color: #ffffff;
 }
 
 .map-canvas-wrap.is-3d .campus3d-controls .icon-btn.active {
@@ -877,8 +885,8 @@
 
 .step-thumb {
   position: relative;
-  width: 54px;
-  height: 42px;
+  width: 62px;
+  height: 48px;
   flex: none;
   z-index: 1;
   overflow: hidden;
