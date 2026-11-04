@@ -52,11 +52,12 @@ Miscellaneous campus and event photos collected from the college contact/gallery
 
 ## 4. Deployed copies (`compass-v2/public/img` and `dist/img`)
 
-Only these are served by Compass 2.0:
+These image folders are served by Compass 2.0:
 
 - `img/hero/` — 7 images used for the home hero and fallbacks.
 - `img/gallery/` — 18 curated campus photos.
 - `img/rooms/` — 51 room photos.
+- `img/map/campus-satellite.jpg` and `img/map/campus-context.jpg` — real Esri World Imagery aerial exports. They power Satellite view, the 3D ground/roof texture, and direction-step image crops. Route lines are drawn over the real aerial images; the previews are not 3D screenshots or ground-level photos of each turn.
 
 The rest of the collection under `gndec-one/_research` and the top-level files is research material and is not shipped.
 

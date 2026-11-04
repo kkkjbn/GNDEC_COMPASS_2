@@ -486,7 +486,7 @@ export default function MapPage() {
       <PageHeader
         eyebrow="RASTA SAATHI · CAMPUS NAVIGATION"
         title="Find your way around campus"
-        description={`${places.length} campus places mapped from OpenStreetMap. Routes follow the mapped walking network; endpoint locations can be approximate. The 3D view uses mapped footprints, with illustrative facades and estimated heights wherever survey data is missing.`}
+        description={`${places.length} campus places mapped from OpenStreetMap. Routes follow the mapped walking network and use real aerial imagery. The 3D view maps that imagery onto real building footprints; facade details and untagged heights remain estimates.`}
       />
 
       {!online && (
@@ -914,11 +914,16 @@ export default function MapPage() {
                       <span><ArrowLeftRight size={12} /> Longer alternative: {Math.round(route.alternative.meters)} m · {route.alternative.minutes} min</span>
                     )}
                   </div>
+                  <div className="route-imagery-note">
+                    <Camera size={14} />
+                    <span>Step previews are crops of real Esri aerial photography, with the walking line overlaid. They are separate from the 3D model; ground-level photos are not available for every turn.</span>
+                  </div>
                   <ol className="route-steps with-thumbs">
                     <li>
                       <span className="step-thumb">
                         <RouteMap points={source?.pos ? [source.pos] : []} compact padding={0.045} label={`Satellite view of ${source?.name || 'the starting point'}`} />
                         <b className="step-thumb-index start">A</b>
+                        <span className="step-thumb-source">AERIAL</span>
                       </span>
                       <div>
                         <b>Start at {source?.name || 'your location'}</b>
@@ -933,6 +938,7 @@ export default function MapPage() {
                             <b className={`step-thumb-index ${step.turn === 'arrive' ? 'end' : ''}`}>
                               {step.turn === 'arrive' ? <Check size={11} /> : index + 1}
                             </b>
+                            <span className="step-thumb-source">AERIAL</span>
                           </span>
                         ) : (
                           <span className={`step-marker ${step.turn === 'arrive' ? 'end' : ''}`}>

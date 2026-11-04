@@ -5,6 +5,7 @@ import path from 'node:path';
 import { findRoute, distanceMeters } from '../src/lib/campus.js';
 import { clampView, mapPointAtScreen, panView, pointsViewBox, viewTransform, zoomView, zoomViewAtScreen } from '../src/lib/viewport.js';
 import { orbitProject, panTargetByScreen, screenToGround, zoomTargetAboutGround } from '../src/lib/camera3d.js';
+import { triangulatePolygon } from '../src/lib/triangulate.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (name) => JSON.parse(fs.readFileSync(path.join(root, 'public', 'data', `${name}.json`), 'utf8'));
@@ -108,6 +109,43 @@ test('map transform and route viewBox stay finite and padded', () => {
   assert.equal(pointsViewBox([]), null);
 });
 
+test('roof triangulation preserves convex and concave OSM footprint area', () => {
+  const signedArea = (points) => points.reduce((sum, point, index) => {
+    const next = points[(index + 1) % points.length];
+    return sum + point[0] * next[1] - next[0] * point[1];
+  }, 0) / 2;
+  const triangleArea = (a, b, c) => Math.abs(
+    ((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) / 2,
+  );
+  const footprints = [
+    [[0, 0], [4, 0], [4, 3], [0, 3]],
+    [[0, 0], [4, 0], [4, 1], [1, 1], [1, 4], [0, 4]],
+    [[0, 4], [1, 4], [1, 1], [4, 1], [4, 0], [0, 0]],
+    [[0, 0], [4, 0], [4, 3], [0, 3], [0, 0]],
+  ];
+  for (const footprint of footprints) {
+    const triangles = triangulatePolygon(footprint);
+    const vertexCount = footprint.length - (footprint[0][0] === footprint.at(-1)[0] && footprint[0][1] === footprint.at(-1)[1] ? 1 : 0);
+    assert.equal(triangles.length, vertexCount - 2);
+    const area = triangles.reduce((sum, [a, b, c]) => sum + triangleArea(footprint[a], footprint[b], footprint[c]), 0);
+    assert.ok(Math.abs(area - Math.abs(signedArea(footprint))) < 1e-8);
+  }
+});
+
+test('all published campus building footprints can be textured without gaps', () => {
+  const buildings = campus.geometry.filter((shape) => shape.type === 'building');
+  assert.equal(buildings.length, 203);
+  for (const building of buildings) {
+    const ring = building.pts;
+    const uniqueCount = ring.length - (ring[0][0] === ring.at(-1)[0] && ring[0][1] === ring.at(-1)[1] ? 1 : 0);
+    assert.equal(
+      triangulatePolygon(ring).length,
+      uniqueCount - 2,
+      `footprint ${building.id} should triangulate completely`,
+    );
+  }
+});
+
 test('every route step carries real map geometry along the OSM walk network', () => {
   const route = findRoute(campus, 'main-gate', 'g-block', paths);
   assert.ok(route, 'expected a route from Main Gate to G-Block');
@@ -124,4 +162,14 @@ test('every route step carries real map geometry along the OSM walk network', ()
   assert.equal(arrive.turn, 'arrive');
   assert.equal(arrive.points.length, 1);
   assert.ok(route.connector.from >= 0 && route.connector.to >= 0);
+});
+
+test('direction thumbnails use the stored real satellite photograph, not the 3D canvas', () => {
+  const satellite = fs.readFileSync(path.join(root, 'public', 'img', 'map', 'campus-satellite.jpg'));
+  assert.equal(satellite[0], 0xff);
+  assert.equal(satellite[1], 0xd8);
+  const routeVisuals = fs.readFileSync(path.join(root, 'src', 'components', 'RouteVisuals.jsx'), 'utf8');
+  assert.match(routeVisuals, /SATELLITE_DETAIL\.src/);
+  assert.match(routeVisuals, /<image/);
+  assert.doesNotMatch(routeVisuals, /Campus3D/);
 });

@@ -14,6 +14,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { norm } from '../lib/utils.js';
+import { triangulatePolygon } from '../lib/triangulate.js';
 import { SATELLITE_CONTEXT, SATELLITE_DETAIL } from '../lib/map-bounds.js';
 import { MAX_DIST, MIN_DIST, panTargetByScreen, screenToGround as orbitGround, zoomLabelFor, zoomTargetAboutGround } from '../lib/camera3d.js';
 
@@ -272,7 +273,13 @@ export default function Campus3D({
       .filter((shape) => Array.isArray(shape.pts) && shape.pts.length >= 3)
       .map((shape) => {
         const pts = shape.pts.map((point) => [Number(point[0]), Number(point[1])]);
-        return { ...shape, pts, area: Math.abs(polygonArea(pts)), centroid: centroidOf(pts) };
+        return {
+          ...shape,
+          pts,
+          area: Math.abs(polygonArea(pts)),
+          centroid: centroidOf(pts),
+          roofTriangles: triangulatePolygon(pts),
+        };
       })
       .filter((shape) => shape.pts.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y)) && shape.area > 1e-7);
 
@@ -324,7 +331,9 @@ export default function Campus3D({
       // Some OSM buildings carry `height` in feet, or a storey count that
       // contradicts the level tag. Only trust a height that can plausibly
       // contain the tagged floors; otherwise derive it and label the source.
-      const plausibleHeight = taggedHeight && (!meta?.levels || taggedHeight >= meta.levels * 2.3);
+      const plausibleHeight =
+        taggedHeight &&
+        (!meta?.levels || (taggedHeight >= meta.levels * 2.3 && taggedHeight <= meta.levels * 8 + 2));
       const height = plausibleHeight
         ? taggedHeight
         : Math.round((levels * FLOOR_HEIGHT + 0.7) * 10) / 10;
@@ -536,6 +545,32 @@ export default function Campus3D({
       ctx.transform(a, c, b, e, dx0 - a * sx0 - b * sy0, dy0 - c * sx0 - e * sy0);
       ctx.drawImage(source, 0, 0);
       ctx.restore();
+    };
+
+    const drawRoof = (shape, points, fallback) => {
+      const source = imageRef.current;
+      const roofArea = Math.abs(polygonArea(points));
+      const sw = source?.naturalWidth || source?.width || 0;
+      const sh = source?.naturalHeight || source?.height || 0;
+      const triangles = shape.roofTriangles || [];
+      if (!source || !sw || !sh || roofArea < 100 || !triangles.length) {
+        drawPolygon(points, fallback, palette.parapet, 0.8);
+        return;
+      }
+
+      // The roof footprint shares coordinates with the real satellite export.
+      // Warp that photograph onto the raised OSM polygon, triangle by triangle,
+      // so roof color and rooftop detail stay tied to the actual building.
+      for (const indices of triangles) {
+        const sourcePoints = indices.map((index) => [shape.pts[index][0] * sw, shape.pts[index][1] * sh]);
+        const screenPoints = indices.map((index) => [points[index][0], points[index][1]]);
+        drawTriangle(sourcePoints, screenPoints, source);
+      }
+      ctx.save();
+      ctx.globalAlpha = theme === 'dark' ? 0.1 : 0.045;
+      drawPolygon(points, theme === 'dark' ? '#101820' : '#fffaf0', null);
+      ctx.restore();
+      drawPolygon(points, null, palette.parapet, 0.8);
     };
 
     const drawGround = (source, box, grid) => {
@@ -843,7 +878,7 @@ export default function Campus3D({
         continue;
       }
       if (face.kind === 'top') {
-        drawPolygon(face.points, face.fill, palette.parapet, 0.8);
+        drawRoof(face.shape, face.points, face.fill);
         // Slightly inset roof deck line for depth.
         if (face.points.length > 3) {
           ctx.beginPath();
@@ -1605,10 +1640,10 @@ export default function Campus3D({
         <span>·</span>
         <span>{shapes.buildings.length} buildings</span>
         <span>·</span>
-        <span>satellite ground</span>
+        <span>aerial ground + roofs</span>
       </div>
 
-      <div className="campus3d-credit" title="Campus footprints and paths come from OpenStreetMap. Untagged heights and facade details are illustrative estimates, not a survey or street-level scan.">Imagery © Esri · Footprints © OpenStreetMap · Facades illustrative; some heights estimated</div>
+      <div className="campus3d-credit" title="Campus footprints and paths come from OpenStreetMap. Roofs use the georeferenced Esri aerial image. Untagged heights and facade details are estimates, not a measured scan.">Ground and roof imagery © Esri · Footprints © OpenStreetMap · Facades illustrative; some heights estimated</div>
     </div>
   );
 }

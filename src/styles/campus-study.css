@@ -925,15 +925,15 @@
 }
 
 .route-steps.with-thumbs li::before {
-  left: 26px;
-  top: 52px;
+  left: 47px;
+  top: 72px;
   bottom: -8px;
 }
 
 .step-thumb {
   position: relative;
-  width: 62px;
-  height: 48px;
+  width: 96px;
+  height: 66px;
   flex: none;
   z-index: 1;
   overflow: hidden;
@@ -973,6 +973,39 @@
 
 .step-thumb-index.end {
   background: #c97a45;
+}
+
+.step-thumb-source {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 2px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  background: rgba(12, 26, 19, 0.78);
+  color: #f7f2e4;
+  font-size: 7px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+
+.route-imagery-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper-3);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.route-imagery-note svg {
+  margin-top: 1px;
+  color: var(--green-3);
+  flex: none;
 }
 
 .route-steps b {
