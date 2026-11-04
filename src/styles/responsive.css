@@ -1708,3 +1708,48 @@
     overflow: visible;
   }
 }
+
+/* Enlarged Now / Next / Then band. */
+@media (max-width: 900px) {
+  .agenda-list {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .agenda-row {
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .agenda-row .agenda-main {
+    flex: 1 1 180px;
+  }
+
+  .agenda-when {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .agenda-card.band {
+    padding: 15px 14px 14px;
+  }
+
+  .agenda-clock b {
+    font-size: 18px;
+  }
+
+  .agenda-main b {
+    font-size: 15px;
+  }
+
+  .agenda-row {
+    padding: 11px 12px;
+  }
+
+  .topbar-clock {
+    display: none;
+  }
+}

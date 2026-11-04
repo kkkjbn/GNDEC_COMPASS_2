@@ -20,6 +20,7 @@ import { Link, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
 import { categoryMeta, distanceMeters, findRoute, placePhoto, walkMinutes, CATEGORY_META } from '../lib/campus.js';
 import { norm, photoPath } from '../lib/utils.js';
+import Campus3D from '../components/Campus3D.jsx';
 import {
   Badge,
   DataFoot,
@@ -45,7 +46,7 @@ function toPoints(route) {
 }
 
 export default function MapPage() {
-  const { data, online } = useApp();
+  const { data, online, resolvedTheme } = useApp();
   const { searchParams, navigate } = useRouter();
   const campus = data?.campus;
   const places = campus?.places || [];
@@ -58,6 +59,7 @@ export default function MapPage() {
   const [placeQuery, setPlaceQuery] = useState('');
   const [panelTab, setPanelTab] = useState(searchParams.get('tab') === 'gallery' ? 'photos' : 'directions');
   const [lightbox, setLightbox] = useState(null);
+  const [mode, setMode] = useState(searchParams.get('view') === 'plan' ? 'plan' : '3d');
   const svgRef = useRef(null);
 
   const roomQuery = searchParams.get('room') || '';
@@ -182,7 +184,7 @@ export default function MapPage() {
       <PageHeader
         eyebrow="RASTA SAATHI · CAMPUS NAVIGATION"
         title="Find your way around campus"
-        description={`Illustrated campus geometry, ${places.length} places, estimated walking routes and photo landmarks. Indoor door-level routes are not verified yet.`}
+        description={`Illustrated campus geometry, ${places.length} places, estimated walking routes and photo landmarks. Switch to 3D for an extruded model of the published building footprints. Indoor door-level routes are not verified yet.`}
       />
 
       {!online && (
@@ -196,20 +198,43 @@ export default function MapPage() {
           <div className="map-toolbar">
             <SearchField value={placeQuery} onChange={setPlaceQuery} placeholder="Find a place on campus…" className="map-search" />
             <div className="map-toolbar-actions">
-              <button type="button" className="icon-btn" onClick={() => zoom(-0.2)} aria-label="Zoom out" disabled={view.scale <= 1}>
-                <Minus size={16} />
-              </button>
-              <span className="zoom-level">{Math.round(view.scale * 100)}%</span>
-              <button type="button" className="icon-btn" onClick={() => zoom(0.2)} aria-label="Zoom in" disabled={view.scale >= 2.8}>
-                <Plus size={16} />
-              </button>
-              <button type="button" className="icon-btn" onClick={resetView} aria-label="Reset map view" disabled={view.scale === 1 && view.x === 0 && view.y === 0}>
-                <Maximize2 size={15} />
-              </button>
+              <div className="map-mode-switch" role="group" aria-label="Map view">
+                <button type="button" className={mode === 'plan' ? 'active' : ''} onClick={() => setMode('plan')}>
+                  Plan
+                </button>
+                <button type="button" className={mode === '3d' ? 'active' : ''} onClick={() => setMode('3d')}>
+                  3D
+                </button>
+              </div>
+              {mode === 'plan' && (
+                <>
+                  <button type="button" className="icon-btn" onClick={() => zoom(-0.2)} aria-label="Zoom out" disabled={view.scale <= 1}>
+                    <Minus size={16} />
+                  </button>
+                  <span className="zoom-level">{Math.round(view.scale * 100)}%</span>
+                  <button type="button" className="icon-btn" onClick={() => zoom(0.2)} aria-label="Zoom in" disabled={view.scale >= 2.8}>
+                    <Plus size={16} />
+                  </button>
+                  <button type="button" className="icon-btn" onClick={resetView} aria-label="Reset map view" disabled={view.scale === 1 && view.x === 0 && view.y === 0}>
+                    <Maximize2 size={15} />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
-          <div className="map-canvas-wrap">
+          <div className={`map-canvas-wrap ${mode === '3d' ? 'is-3d' : ''}`}>
+            {mode === '3d' ? (
+              <Campus3D
+                campus={campus}
+                places={places}
+                routePoints={routePoints}
+                from={from}
+                to={to}
+                theme={resolvedTheme}
+                onSelect={(id) => selectDestination(id)}
+              />
+            ) : (
             <svg
               ref={svgRef}
               className="campus-svg"
@@ -358,12 +383,13 @@ export default function MapPage() {
                 )}
               </g>
             </svg>
+            )}
 
             <div className="map-legend">
               <span><i style={{ background: '#0f6b4f' }} /> Destination</span>
               <span><i style={{ background: '#c97a45' }} /> Start</span>
               <span><i style={{ background: '#4766c7' }} /> Campus place</span>
-              <span className="map-legend-osm">Illustrated campus plan · not to scale</span>
+              <span className="map-legend-osm">{mode === '3d' ? 'Extruded from published footprints · heights are schematic' : 'Illustrated campus plan · not to scale'}</span>
             </div>
 
             <div className="map-category-bar">

@@ -63,6 +63,11 @@ export function ProfileDialog({ open, onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, profile, timetable]);
 
+  const rosterRecord = useMemo(
+    () => (draft.crn ? roster.find((student) => String(student.crn) === String(draft.crn)) || null : null),
+    [draft.crn, roster],
+  );
+
   const sections = useMemo(() => {
     const all = [...(data?.timetable?.sections || [])].sort(
       (a, b) => a.year - b.year || String(a.branch).localeCompare(String(b.branch)) || String(a.group).localeCompare(String(b.group)),
@@ -158,6 +163,8 @@ export function ProfileDialog({ open, onClose }) {
           sectionId: base?.id || student.section,
           subsection: student.subsection || '',
           academicGroup: student.academicGroup || '',
+          registrationNo: student.registrationNo || '',
+          serialNo: student.currentSerialNo || student.serialNo || '',
           mentor: student.mentor || '',
           mentorPhone: student.mentorPhone || '',
           mentorVenue: student.mentorVenue || student.venue || '',
@@ -323,6 +330,55 @@ export function ProfileDialog({ open, onClose }) {
             Only the public first-year permanent-section roster is searchable. The mentor name, phone and venue below come from that public roster; edit them if your section office has updated them.
           </p>
         </div>
+
+        {rosterRecord && (
+          <div className="roster-card">
+            <div className="roster-card-head">
+              <b>{rosterRecord.name}</b>
+              <span>
+                {rosterRecord.branch} / {rosterRecord.section}
+                {rosterRecord.subsection ? ` / ${rosterRecord.subsection}` : ''}
+              </span>
+            </div>
+            <dl>
+              <div>
+                <dt>CRN</dt>
+                <dd>{rosterRecord.crn}</dd>
+              </div>
+              <div>
+                <dt>Registration</dt>
+                <dd>{rosterRecord.registrationNo || '—'}</dd>
+              </div>
+              <div>
+                <dt>Current serial</dt>
+                <dd>{rosterRecord.currentSerialNo || rosterRecord.serialNo || '—'}</dd>
+              </div>
+              <div>
+                <dt>Section</dt>
+                <dd>
+                  {rosterRecord.section}
+                  {rosterRecord.subsection ? ` / ${rosterRecord.subsection}` : ''}
+                </dd>
+              </div>
+              <div>
+                <dt>Academic group</dt>
+                <dd>{rosterRecord.academicGroup || '—'}</dd>
+              </div>
+              <div>
+                <dt>Mentor</dt>
+                <dd>{rosterRecord.mentor || '—'}</dd>
+              </div>
+              <div>
+                <dt>Mentor phone</dt>
+                <dd>{rosterRecord.mentorPhone || '—'}</dd>
+              </div>
+              <div>
+                <dt>Mentor venue</dt>
+                <dd>{rosterRecord.mentorVenue || rosterRecord.venue || '—'}</dd>
+              </div>
+            </dl>
+          </div>
+        )}
 
         <div className="form-grid">
           <label className="field">

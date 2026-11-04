@@ -744,7 +744,7 @@ export default function Timetable() {
             <div className="free-toolbar">
               <div>
                 <h2>Free rooms & study spaces</h2>
-                <p>Every published 1st, 2nd and 3rd-year section, lab, workshop and seminar hall in the official room timetable.</p>
+                <p>Every published section, sub-section, lab, workshop and seminar hall in the official room timetable — plus the Central Library.</p>
               </div>
               <div className="free-filters">
                 <Select
@@ -769,6 +769,26 @@ export default function Timetable() {
                   options={[{ value: 'all', label: 'All blocks' }, ...blocks.map((block) => ({ value: block.value, label: `${block.label} · ${block.count}` }))]}
                 />
               </div>
+            </div>
+            <div className="free-coverage" aria-label="Timetable year coverage">
+              <span className="free-coverage-label">Year coverage</span>
+              {[1, 2, 3, 4].map((year) => {
+                const checked = (data?.roomTimetable?.coverage?.yearsPublished || []).includes(year);
+                const suffix = year === 1 ? 'st' : year === 2 ? 'nd' : year === 3 ? 'rd' : 'th';
+                return (
+                  <span className={`free-year ${checked ? 'ok' : 'missing'}`} key={year}>
+                    <b>
+                      {year}
+                      {suffix} year
+                    </b>
+                    <small>{checked ? 'Checked' : 'Not published'}</small>
+                  </span>
+                );
+              })}
+              <span className="free-coverage-note">
+                Free rooms are computed from every published section, sub-section, lab, workshop and seminar hall. Central Library is always
+                added as an open study space.
+              </span>
             </div>
             <InlineNotice tone="info" title="Coverage from the official room timetable">
               {data?.roomTimetable?.coverage?.note ||

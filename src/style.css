@@ -2427,40 +2427,90 @@ button.metric:hover {
   font-size: 10.5px;
 }
 
-/* Now / Next / Then agenda inside the hero media card. */
-.agenda-card {
-  padding: 13px 14px 12px;
+/* Now / Next / Then band under the hero. */
+.agenda-band {
+  margin: 0 0 24px;
 }
 
-.agenda-card .next-time {
-  white-space: nowrap;
+.agenda-card.band {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  display: block;
+  padding: 20px 22px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--paper);
+  box-shadow: var(--shadow-md);
+  color: var(--ink);
+}
+
+.agenda-card.band.live {
+  border-left: 4px solid var(--terra);
+}
+
+.agenda-card.band .next-card-top {
+  gap: 14px;
+}
+
+.agenda-card.band .next-label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
+.agenda-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  text-align: right;
+}
+
+.agenda-clock b {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.agenda-clock small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .agenda-list {
-  display: flex;
-  flex-direction: column;
-  margin-top: 7px;
-  border-top: 1px solid var(--line-soft);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  border-top: 0;
 }
 
 .agenda-row {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-height: 96px;
+  padding: 13px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--bg);
 }
 
 .agenda-row:last-child {
-  border-bottom: 0;
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .agenda-row.is-now {
-  margin: 0 -6px;
-  padding: 6px;
-  border-radius: 8px;
-  border-bottom-color: transparent;
+  margin: 0;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--terra) 34%, var(--line-soft));
+  border-radius: 14px;
   background: var(--green-wash);
 }
 
@@ -2469,42 +2519,53 @@ button.metric:hover {
 }
 
 .agenda-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: var(--muted-2);
-  font-size: 8px;
+  font-size: 9.5px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .agenda-row.is-now .agenda-tag {
-  color: var(--green-2);
+  color: var(--terra);
 }
 
 .agenda-main {
   display: flex;
   flex-direction: column;
+  gap: 3px;
   min-width: 0;
+  width: 100%;
 }
 
 .agenda-main b {
-  font-size: 12.5px;
+  font-size: 17px;
   font-weight: 650;
-  line-height: 1.3;
-  white-space: nowrap;
+  line-height: 1.22;
+  white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .agenda-main small {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: 11px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.agenda-main small svg {
+  flex: none;
 }
 
 .agenda-main small span {
@@ -2513,15 +2574,61 @@ button.metric:hover {
 
 .agenda-row.empty .agenda-main b {
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 550;
+  -webkit-line-clamp: 3;
 }
 
 .agenda-when {
+  margin-top: auto;
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 650;
+  font-size: 11px;
+  font-weight: 700;
   white-space: nowrap;
+}
+
+.agenda-when-inline {
+  color: var(--muted-2) !important;
+  font-size: 10.5px !important;
+}
+
+.agenda-card.band .next-actions {
+  margin-top: 14px;
+}
+
+.agenda-card.band .next-actions .btn {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 11.5px;
+}
+
+.agenda-card.band .next-route {
+  font-size: 11.5px;
+}
+
+/* Live IST clock in the top bar. */
+.topbar-clock {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  padding: 0 8px;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.topbar-clock b {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.topbar-clock small {
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
 }
 
 .agenda-progress {
@@ -3349,6 +3456,67 @@ button.metric:hover {
 .profile-preview small {
   color: var(--muted);
   font-size: 10px;
+}
+
+.roster-card {
+  padding: 12px 13px;
+  border: 1px solid color-mix(in srgb, var(--green-2) 30%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--green-wash);
+}
+
+.roster-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--green-2) 20%, var(--line-soft));
+}
+
+.roster-card-head b {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.roster-card-head span {
+  color: var(--green-2);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.roster-card dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.roster-card dt {
+  color: var(--muted-2);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.roster-card dd {
+  margin: 1px 0 0;
+  color: var(--ink);
+  font-size: 11.5px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .roster-card dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .privacy-note {

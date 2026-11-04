@@ -68,9 +68,13 @@ function mergeOverrides(data, overrides = {}) {
   return { ...data, rooms, campus };
 }
 
-function resolveTheme(theme) {
+function systemPrefersDark() {
+  return Boolean(window.matchMedia?.('(prefers-color-scheme: dark)')?.matches);
+}
+
+function resolveTheme(theme, deviceDark) {
   if (theme === 'dark' || theme === 'light') return theme;
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return deviceDark ? 'dark' : 'light';
 }
 
 export function AppProvider({ children }) {
@@ -80,6 +84,8 @@ export function AppProvider({ children }) {
   const [online, setOnline] = useState(() => navigator.onLine);
   const [profile, setProfileState] = useState(() => ({ ...defaultProfile, ...readStorage('compass2.profile', {}) }));
   const [theme, setThemeState] = useState(() => readStorage('compass2.theme', 'system'));
+  const [deviceDark, setDeviceDark] = useState(systemPrefersDark);
+  const resolvedTheme = resolveTheme(theme, deviceDark);
   const [bookmarks, setBookmarks] = useState(() => readStorage('compass2.bookmarks', []));
   const [overrides, setOverridesState] = useState(() => readStorage('compass2.overrides', {}));
   const [toasts, setToasts] = useState([]);
@@ -128,15 +134,18 @@ export function AppProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const apply = () => {
-      document.documentElement.dataset.theme = resolveTheme(theme);
-      document.documentElement.style.colorScheme = resolveTheme(theme);
-    };
-    apply();
     const media = window.matchMedia?.('(prefers-color-scheme: dark)');
-    media?.addEventListener?.('change', apply);
-    return () => media?.removeEventListener?.('change', apply);
-  }, [theme]);
+    if (!media) return undefined;
+    const onChange = (event) => setDeviceDark(event.matches);
+    setDeviceDark(media.matches);
+    media.addEventListener?.('change', onChange);
+    return () => media.removeEventListener?.('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolvedTheme;
+    document.documentElement.style.colorScheme = resolvedTheme;
+  }, [resolvedTheme]);
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return undefined;
@@ -308,6 +317,7 @@ export function AppProvider({ children }) {
       setProfile,
       theme,
       setTheme,
+      resolvedTheme,
       bookmarks,
       toggleBookmark,
       isBookmarked,
@@ -337,6 +347,7 @@ export function AppProvider({ children }) {
       setProfile,
       theme,
       setTheme,
+      resolvedTheme,
       bookmarks,
       toggleBookmark,
       isBookmarked,

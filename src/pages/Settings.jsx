@@ -113,7 +113,7 @@ export default function Settings() {
 
   if (!data) return null;
 
-  const resolvedTheme = theme;
+  const selectedTheme = theme;
 
   return (
     <div className="settings-page">
@@ -181,7 +181,7 @@ export default function Settings() {
                 { value: 'dark', label: 'Dark', note: 'Low-light forest', icon: Moon },
                 { value: 'system', label: 'System', note: 'Match this device', icon: Monitor },
               ].map((option) => (
-                <button type="button" key={option.value} className={`theme-option ${resolvedTheme === option.value ? 'active' : ''}`} onClick={() => setTheme(option.value)}>
+                <button type="button" key={option.value} className={`theme-option ${selectedTheme === option.value ? 'active' : ''}`} onClick={() => setTheme(option.value)}>
                   <span className={`theme-preview theme-preview-${option.value}`}>
                     <span />
                     <span />
@@ -192,7 +192,7 @@ export default function Settings() {
                     <b>{option.label}</b>
                     <small>{option.note}</small>
                   </span>
-                  {resolvedTheme === option.value && (
+                  {selectedTheme === option.value && (
                     <span className="theme-check">
                       <Check size={12} />
                     </span>

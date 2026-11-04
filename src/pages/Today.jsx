@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Link } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
-import { DAYS, DAYS_SHORT, formatClock, greeting, istDate, longDate, dayIndexFor, dateKey, timeToMin } from '../lib/utils.js';
+import { DAYS, DAYS_SHORT, formatClock, greeting, istDate, longDate, dayIndexFor, dateKey, timeToMin, clockLabel } from '../lib/utils.js';
 import {
   COLLEGE_DAY_END_MINUTES,
   dayPlanOn,
@@ -51,6 +51,7 @@ function AgendaRow({ tag, lecture, empty, when, isNow = false }) {
         <span className="agenda-tag">{tag}</span>
         <div className="agenda-main">
           <b>{empty}</b>
+          {when && <small className="agenda-when-inline">{when}</small>}
         </div>
       </div>
     );
@@ -61,7 +62,7 @@ function AgendaRow({ tag, lecture, empty, when, isNow = false }) {
       <div className="agenda-main">
         <b>{cleanSubject(lecture.subject)}</b>
         <small>
-          <Clock3 size={11} /> {formatClock(lecture.start)}–{formatClock(lecture.end)}
+          <Clock3 size={12} /> {formatClock(lecture.start)}–{formatClock(lecture.end)}
           <span>·</span>
           {lecture.room || 'Room not listed'}
         </small>
@@ -128,13 +129,19 @@ function AgendaCard({ section, now }) {
         : '';
 
   return (
-    <div className={`next-class-card agenda-card ${current ? 'live' : ''}`}>
+    <div className={`next-class-card agenda-card band ${current ? 'live' : ''}`}>
       <div className="next-card-top">
         <span className="next-label">
           <span className={`live-dot ${current ? 'on' : ''}`} />
           {heading}
         </span>
-        <span className="next-time">{dayCopy}</span>
+        <span className="agenda-clock">
+          <b>{clockLabel(now)}</b>
+          <small>
+            {now.toLocaleDateString('en-IN', { weekday: 'long' })} · {now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+            {dayCopy ? ` · ${dayCopy}` : ''}
+          </small>
+        </span>
       </div>
 
       {current && (
@@ -212,7 +219,7 @@ export default function Today() {
     <div className="today-page">
       <section className="hero">
         <div className="hero-copy">
-          <span className="eyebrow">{longDate(now)}</span>
+          <span className="eyebrow">{longDate(now)} · {clockLabel(now)} IST</span>
           <h1>
             {greeting(now)}
             {profile.name ? (
@@ -267,8 +274,11 @@ export default function Today() {
               <small>EST. 1953 · CAMPUS GUIDE</small>
             </span>
           </span>
-          <AgendaCard section={section} now={now} />
         </div>
+      </section>
+
+      <section className="agenda-band" aria-label="Now, next and then">
+        <AgendaCard section={section} now={now} />
       </section>
 
       <div className="today-grid">

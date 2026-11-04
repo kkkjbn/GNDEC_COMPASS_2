@@ -24,6 +24,7 @@ import {
 import { Link, routeTitle, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
 import { findSection } from '../lib/timetable.js';
+import { clockLabel, istDate } from '../lib/utils.js';
 import { CommandSearch } from './CommandSearch.jsx';
 import { ProfileDialog } from './ProfileDialog.jsx';
 import { CampusBanner } from './CampusBanner.jsx';
@@ -164,10 +165,28 @@ function Sidebar({ onProfile }) {
   );
 }
 
+function LiveClock() {
+  const [now, setNow] = useState(() => istDate());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(istDate()), 20000);
+    return () => clearInterval(timer);
+  }, []);
+  const day = now.toLocaleDateString('en-IN', { weekday: 'short' });
+  const date = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return (
+    <span className="topbar-clock" title="Indian Standard Time (Asia/Kolkata)">
+      <b>{clockLabel(now)}</b>
+      <small>
+        {day} · {date} · IST
+      </small>
+    </span>
+  );
+}
+
 function Topbar({ onSearch, onProfile, onMore }) {
   const { path } = useRouter();
-  const { online, profile, theme, setTheme, installPrompt, promptInstall, toast } = useApp();
-  const resolved = document.documentElement.dataset.theme;
+  const { online, profile, setTheme, installPrompt, promptInstall, toast, resolvedTheme } = useApp();
+  const resolved = resolvedTheme;
   const title = routeTitle(path);
 
   const toggleTheme = () => {
@@ -189,6 +208,7 @@ function Topbar({ onSearch, onProfile, onMore }) {
         <kbd>Ctrl K</kbd>
       </button>
       <div className="topbar-actions">
+        <LiveClock />
         <span className={`connection ${online ? 'online' : 'offline'}`} title={online ? 'Online' : 'Offline — cached data is active'}>
           {online ? <Wifi size={14} /> : <WifiOff size={14} />}
           <span>{online ? 'Online' : 'Offline'}</span>
@@ -222,8 +242,8 @@ function Topbar({ onSearch, onProfile, onMore }) {
 
 function MobileSheet({ open, onClose, onProfile, onSearch }) {
   const { path } = useRouter();
-  const { theme, setTheme } = useApp();
-  const resolved = document.documentElement.dataset.theme;
+  const { setTheme, resolvedTheme } = useApp();
+  const resolved = resolvedTheme;
   if (!open) return null;
   const all = [...NAV_GROUPS.flatMap((group) => group.items), ...SYSTEM_NAV, { path: '/legacy', label: 'Old Compass', icon: ExternalLink }];
   return (
