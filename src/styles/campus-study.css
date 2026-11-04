@@ -948,6 +948,16 @@
   height: 100%;
 }
 
+.step-photo-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 66px;
+  flex: none;
+  z-index: 1;
+}
+
 .step-thumb-index {
   position: absolute;
   left: 3px;

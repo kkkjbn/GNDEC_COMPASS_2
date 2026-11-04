@@ -932,7 +932,7 @@ export default function MapPage() {
                           <b className="step-thumb-index start">A</b>
                           <span className="step-thumb-source">GNDEC PHOTO</span>
                         </span>
-                      ) : <span className="step-marker start">A</span>}
+                      ) : <span className="step-photo-placeholder"><span className="step-marker start">A</span></span>}
                       <div>
                         <b>Start at {source?.name || 'your location'}</b>
                         <small>{source?.description || 'Use the main gate as a safe default starting point.'}</small>
@@ -949,8 +949,10 @@ export default function MapPage() {
                             <span className="step-thumb-source">GNDEC PHOTO</span>
                           </span>
                         ) : (
-                          <span className={`step-marker ${step.turn === 'arrive' ? 'end' : ''}`}>
-                            {step.turn === 'arrive' ? <Check size={13} /> : index + 1}
+                          <span className="step-photo-placeholder">
+                            <span className={`step-marker ${step.turn === 'arrive' ? 'end' : ''}`}>
+                              {step.turn === 'arrive' ? <Check size={13} /> : index + 1}
+                            </span>
                           </span>
                         )}
                         <div>
