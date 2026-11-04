@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { Link } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
-import { downloadJson } from '../lib/utils.js';
+import { downloadJson, istDayLabel } from '../lib/utils.js';
 import { findSection } from '../lib/timetable.js';
 import { useShell } from '../components/Shell.jsx';
 import {
@@ -62,6 +62,8 @@ export default function Settings() {
     assistantMemory,
     setAssistantMemory,
   } = useApp();
+
+  const dataChecked = istDayLabel(data?.status?.lastCheckedAt || data?.timetable?.generatedAt || data?.notices?.generatedAt);
   const { openProfile } = useShell();
   const [storage, setStorage] = useState(null);
   const section = findSection(data?.timetable, profile.sectionId);
@@ -355,7 +357,7 @@ export default function Settings() {
             <h2>Compass 2.0</h2>
             <dl>
               <div><dt>Version</dt><dd>2.0.0</dd></div>
-              <div><dt>Data checked</dt><dd>2 Nov 2026</dd></div>
+              <div><dt>Data checked</dt><dd>{dataChecked || 'Not listed'}</dd></div>
               <div><dt>Classes indexed</dt><dd>{(data.timetable?.sections || []).reduce((sum, item) => sum + (item.lectures?.length || 0), 0).toLocaleString('en-IN')}</dd></div>
               <div><dt>Old Compass</dt><dd><a href="https://gndec-compass.koushikjain2007.workers.dev/#/today" target="_blank" rel="noreferrer">Visit <ExternalLink size={11} /></a></dd></div>
             </dl>

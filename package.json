@@ -11,6 +11,8 @@
     "test": "node --test tests/*.test.mjs",
     "refresh": "node scripts/refresh-data.mjs",
     "refresh:check": "node scripts/refresh-data.mjs --check",
+    "refresh:notices": "node scripts/refresh-notices.mjs",
+    "refresh:notices:check": "node scripts/refresh-notices.mjs --check",
     "refresh:roster": "node scripts/enrich-roster.mjs",
     "deploy": "npm run build && wrangler deploy"
   },

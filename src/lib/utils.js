@@ -204,6 +204,19 @@ export const dateTimeLabel = (value) => {
   return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
 };
 
+/** Calendar date of an ISO timestamp, rendered in IST. */
+export const istDayLabel = (value) => {
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return dateTimeLabel(value);
+  return new Intl.DateTimeFormat('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: IST_TIME_ZONE,
+  }).format(date);
+};
+
 export const relativeDay = (value) => {
   const date = parseDate(value);
   if (!date) return '';

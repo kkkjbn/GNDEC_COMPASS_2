@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Link, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
-import { dateKey, dateTimeLabel, istDate, parseDate, relativeDay, sortByDateDesc } from '../lib/utils.js';
+import { dateKey, dateTimeLabel, istDate, istDayLabel, parseDate, relativeDay, sortByDateDesc } from '../lib/utils.js';
 import {
   Badge,
   DataFoot,
@@ -90,6 +90,7 @@ export default function Notices() {
     );
   }, [notices, exams, tab, query]);
 
+  const noticesUpdated = istDayLabel(data?.notices?.generatedAt);
   const today = dateKey(istDate());
   const upcomingHolidays = useMemo(
     () => holidays.filter((holiday) => holiday.date >= today).sort((a, b) => a.date.localeCompare(b.date)),
@@ -233,7 +234,10 @@ export default function Notices() {
               Compass indexes titles and dates, then sends you to the original college source. A notice can be edited or withdrawn by the college without our index
               changing — always trust the official page.
             </InlineNotice>
-            <DataFoot>Sources: GNDEC homepage and ERP notice board; indexed {notices.length} notices. Last data refresh: 2 Nov 2026.</DataFoot>
+            <DataFoot>
+              Sources: GNDEC homepage and ERP notice board; indexed {notices.length} notices.
+              {noticesUpdated ? ` Notices last updated ${noticesUpdated}.` : ''}
+            </DataFoot>
           </div>
         ) : (
           <div className="holidays-pane">
