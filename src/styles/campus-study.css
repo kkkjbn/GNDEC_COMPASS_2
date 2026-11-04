@@ -406,7 +406,7 @@
 }
 
 .map-category-bar button.active em {
-  color: rgba(248, 242, 227, 0.6);
+  color: rgba(248, 242, 227, 0.72);
 }
 
 .map-search-results {
@@ -629,7 +629,7 @@
   padding: 10px 11px;
 }
 
-.destination-copy h3 {
+.destination-copy h2 {
   margin-top: 2px;
   font-family: var(--serif);
   font-size: 19px;

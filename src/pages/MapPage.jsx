@@ -827,7 +827,7 @@ export default function MapPage() {
                   </div>
                   <div className="destination-copy">
                     <span className="eyebrow">{categoryMeta(destination.category).label.toUpperCase()}</span>
-                    <h3>{destination.name}</h3>
+                    <h2>{destination.name}</h2>
                     <p>{destination.description || 'A campus place from the Compass place list.'}</p>
                     {destination.floor && <small>Floor: {destination.floor}</small>}
                     {destinationBuilding?.levels && (

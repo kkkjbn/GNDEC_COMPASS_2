@@ -12,7 +12,7 @@
   --paper-3: #f1f5f2;
   --ink: #15221c;
   --ink-soft: #36473f;
-  --muted: #67766f;
+  --muted: #5f6d66;
   --muted-2: #8b9891;
   --line: #dfe6e1;
   --line-soft: #edf2ee;
@@ -21,7 +21,7 @@
   --green-3: #1c8160;
   --green-ink: #062219;
   --green-wash: #e6f2eb;
-  --terra: #a9633f;
+  --terra: #9b5633;
   --terra-soft: #f3e6dd;
   --gold: #9a7a2f;
   --gold-soft: #f4eeda;
@@ -2086,7 +2086,7 @@ button.metric:hover {
 }
 
 .footer-admin {
-  color: var(--muted-2);
+  color: var(--muted);
 }
 
 /* --------------------------------------------------------------------------

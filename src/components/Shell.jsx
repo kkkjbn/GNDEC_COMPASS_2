@@ -335,7 +335,7 @@ function Footer() {
         <span>·</span>
         <span>Data checked {checked}</span>
         <span>·</span>
-        <Link to="/admin" className="footer-admin" aria-label="Admin studio">
+        <Link to="/admin" className="footer-admin" aria-label="Admin studio, v2.0">
           v2.0
         </Link>
       </div>

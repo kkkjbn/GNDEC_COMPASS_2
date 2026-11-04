@@ -75,7 +75,12 @@ export function RoutePreview({ points, from, to, metres, minutes, onOpen }) {
   if (!points || points.length < 2) return null;
   return (
     <div className="route-preview">
-      <button type="button" className="route-preview-map" onClick={onOpen} aria-label="Open this route in the 3D map">
+      <button
+        type="button"
+        className="route-preview-map"
+        onClick={onOpen}
+        aria-label={`Open this route in the 3D map: ${Math.round(metres)} m · ${minutes} min from ${from?.name || 'the start'} to ${to?.name || 'the destination'}`}
+      >
         <RouteMap points={points} label={`Satellite route from ${from?.name || 'the start'} to ${to?.name || 'the destination'}`} />
         <span className="route-preview-badge">{Math.round(metres)} m · {minutes} min</span>
       </button>
