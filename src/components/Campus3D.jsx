@@ -5,13 +5,17 @@ import {
   EyeOff,
   Footprints,
   Layers3,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   Minus,
   Plus,
   RotateCcw,
 } from 'lucide-react';
 import { norm } from '../lib/utils.js';
 import { SATELLITE_CONTEXT, SATELLITE_DETAIL } from '../lib/map-bounds.js';
-import { MAX_DIST, MIN_DIST, screenToGround as orbitGround, zoomLabelFor, zoomTargetAboutGround } from '../lib/camera3d.js';
+import { MAX_DIST, MIN_DIST, panTargetByScreen, screenToGround as orbitGround, zoomLabelFor, zoomTargetAboutGround } from '../lib/camera3d.js';
 
 /**
  * Perspective 3D model of the real GNDEC campus.
@@ -1167,6 +1171,20 @@ export default function Campus3D({
     [runCameraMotion],
   );
 
+  const pan = useCallback((screenDx, screenDy) => {
+    const goal = targetRef.current;
+    const wrap = wrapRef.current;
+    const [tx, tz] = panTargetByScreen(goal, wrap?.clientWidth || 900, wrap?.clientHeight || 600, screenDx, screenDy);
+    const dx = tx - goal.tx;
+    const dz = tz - goal.tz;
+    goal.tx = clamp(tx, -1400, 1400);
+    goal.tz = clamp(tz, -1400, 1400);
+    if (goal.mode === 'walk' && Array.isArray(goal.eye)) {
+      goal.eye = [goal.eye[0] + dx, goal.eye[1], goal.eye[2] + dz];
+    }
+    runCameraMotion();
+  }, [runCameraMotion]);
+
   // Convert a screen position to the point on the ground plane (y = 0) under
   // it. Used so wheel zoom keeps the campus point under the cursor fixed
   // instead of always zooming towards the middle of the screen.
@@ -1556,6 +1574,12 @@ export default function Campus3D({
       <div className="campus3d-hint">Scroll to zoom at the cursor · click any spot to focus · drag to orbit · shift-drag to pan</div>
 
       <div className="campus3d-controls">
+        <div className="map-pan-pad campus3d-pan-pad" role="group" aria-label="Move 3D map">
+          <button type="button" className="icon-btn pan-up" onClick={() => pan(0, -72)} aria-label="Move map up"><ArrowUp size={15} /></button>
+          <button type="button" className="icon-btn pan-left" onClick={() => pan(-72, 0)} aria-label="Move map left"><ArrowLeft size={15} /></button>
+          <button type="button" className="icon-btn pan-right" onClick={() => pan(72, 0)} aria-label="Move map right"><ArrowRight size={15} /></button>
+          <button type="button" className="icon-btn pan-down" onClick={() => pan(0, 72)} aria-label="Move map down"><ArrowDown size={15} /></button>
+        </div>
         <button type="button" className="icon-btn" onClick={() => setZoom(1.3)} aria-label="Zoom in">
           <Plus size={15} />
         </button>

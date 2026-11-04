@@ -15,6 +15,21 @@ export const ZOOM_BASE_DIST = 1460;
 
 export const zoomLabelFor = (dist) => Math.round((ZOOM_BASE_DIST / dist) * 100);
 
+/** Shift the camera target to move the rendered campus by a screen-space delta. */
+export function panTargetByScreen(cam, width, height, screenDx, screenDy) {
+  const scale = cam.mode === 'walk'
+    ? 0.08
+    : (2 * cam.dist * Math.tan((cam.fov * D2R) / 2)) / Math.max(1, height);
+  const rightX = Math.cos(cam.yaw);
+  const rightZ = Math.sin(cam.yaw);
+  const forwardX = Math.sin(cam.yaw);
+  const forwardZ = -Math.cos(cam.yaw);
+  return [
+    cam.tx + (-rightX * screenDx + forwardX * screenDy) * scale,
+    cam.tz + (-rightZ * screenDx + forwardZ * screenDy) * scale,
+  ];
+}
+
 export function orbitEye(cam) {
   const cp = Math.cos(cam.pitch);
   const sp = Math.sin(cam.pitch);

@@ -159,6 +159,42 @@
   height: 28px;
 }
 
+.map-pan-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 30px);
+  grid-template-rows: repeat(3, 30px);
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+}
+
+.map-pan-pad .pan-up { grid-column: 2; grid-row: 1; }
+.map-pan-pad .pan-left { grid-column: 1; grid-row: 2; }
+.map-pan-pad .pan-right { grid-column: 3; grid-row: 2; }
+.map-pan-pad .pan-down { grid-column: 2; grid-row: 3; }
+
+.map-pan-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 4px;
+  border: 1px solid rgba(35, 48, 39, 0.14);
+  border-radius: 12px;
+  background: rgba(252, 249, 240, 0.94);
+  box-shadow: 0 4px 14px rgba(30, 35, 25, 0.14);
+  backdrop-filter: blur(8px);
+}
+
+.map-pan-controls .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+
+.campus3d-pan-pad {
+  margin-bottom: 3px;
+}
+
 .map-canvas-wrap.is-3d .campus3d-controls .icon-btn {
   color: #e8f3ec;
   background: rgba(20, 34, 27, 0.9);
@@ -174,6 +210,17 @@
 .map-canvas-wrap.is-3d .campus3d-controls .icon-btn.active {
   background: rgba(111, 211, 164, 0.18);
   color: #8fe3b9;
+}
+
+[data-theme='dark'] .map-pan-controls {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(14, 24, 19, 0.92);
+}
+
+[data-theme='dark'] .map-pan-controls .icon-btn {
+  color: #e8f3ec;
+  background: rgba(20, 34, 27, 0.9);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .campus3d-scale {

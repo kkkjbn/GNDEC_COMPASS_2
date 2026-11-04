@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { findRoute, distanceMeters } from '../src/lib/campus.js';
 import { clampView, mapPointAtScreen, panView, pointsViewBox, viewTransform, zoomView, zoomViewAtScreen } from '../src/lib/viewport.js';
-import { orbitProject, screenToGround, zoomTargetAboutGround } from '../src/lib/camera3d.js';
+import { orbitProject, panTargetByScreen, screenToGround, zoomTargetAboutGround } from '../src/lib/camera3d.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const read = (name) => JSON.parse(fs.readFileSync(path.join(root, 'public', 'data', `${name}.json`), 'utf8'));
@@ -70,6 +70,18 @@ test('3D wheel zoom keeps the ground point under the cursor fixed', () => {
   const centred = zoomTargetAboutGround(cam, centreGround, nextDist);
   assert.ok(Math.abs(centred[0] - cam.tx) < 0.01);
   assert.ok(Math.abs(centred[1] - cam.tz) < 0.01);
+});
+
+test('3D pan buttons move the camera opposite the requested screen direction', () => {
+  const cam = { mode: 'orbit', yaw: 0, pitch: 0.7, dist: 1200, fov: 38, tx: 10, tz: 20 };
+  const right = panTargetByScreen(cam, 900, 600, 72, 0);
+  const left = panTargetByScreen(cam, 900, 600, -72, 0);
+  const up = panTargetByScreen(cam, 900, 600, 0, -72);
+  const down = panTargetByScreen(cam, 900, 600, 0, 72);
+  assert.ok(right[0] < cam.tx);
+  assert.ok(left[0] > cam.tx);
+  assert.ok(up[1] > cam.tz);
+  assert.ok(down[1] < cam.tz);
 });
 
 test('map pan and zoom are clamped to the frame', () => {

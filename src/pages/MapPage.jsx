@@ -2,6 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeftRight,
   ArrowRight,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
   Building2,
   Camera,
   Check,
@@ -297,6 +300,19 @@ export default function MapPage() {
     const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, base.scale + delta));
     const frame = frameRef.current;
     animateToView(zoomView(base, scale, { x: frame.x + frame.width / 2, y: frame.y + frame.height / 2 }, frame));
+  };
+
+  const pan = (direction) => {
+    const frame = frameRef.current;
+    const stepX = frame.width * 0.12;
+    const stepY = frame.height * 0.12;
+    const delta = {
+      up: [0, -stepY],
+      down: [0, stepY],
+      left: [-stepX, 0],
+      right: [stepX, 0],
+    }[direction];
+    if (delta) animateToView(panView(targetViewRef.current, delta[0], delta[1], frame));
   };
 
   const resetView = () => animateToView(defaultView);
@@ -731,6 +747,15 @@ export default function MapPage() {
                 )}
               </g>
             </svg>
+            )}
+
+            {mode !== '3d' && (
+              <div className="map-pan-pad map-pan-controls" role="group" aria-label="Move map">
+                <button type="button" className="icon-btn pan-up" onClick={() => pan('up')} aria-label="Move map up"><ArrowUp size={16} /></button>
+                <button type="button" className="icon-btn pan-left" onClick={() => pan('left')} aria-label="Move map left"><ArrowLeft size={16} /></button>
+                <button type="button" className="icon-btn pan-right" onClick={() => pan('right')} aria-label="Move map right"><ArrowRight size={16} /></button>
+                <button type="button" className="icon-btn pan-down" onClick={() => pan('down')} aria-label="Move map down"><ArrowDown size={16} /></button>
+              </div>
             )}
 
             <div className="map-legend">
