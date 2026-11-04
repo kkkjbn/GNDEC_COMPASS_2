@@ -912,7 +912,7 @@ function answerTimetable({ data, profile, memory, nq, section, dayInfo, teacher,
               : current
                 ? 'No later class is listed today.'
                 : '',
-            `Section: ${activeSection.label}${activeSection !== section ? ` (whole section; subsection ${section.id} has no class listed now)` : ''}.`,
+            `Section: ${sectionLabel}${activeSection !== section ? ` (whole section; subsection ${section.id} has no class listed now)` : ''}.`,
           ]
             .filter(Boolean)
             .join('\n')

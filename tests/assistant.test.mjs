@@ -79,6 +79,20 @@ test('assistant personalizes a first-year timetable with the mentoring group', (
   assert.match(answer.text, /G6/);
 });
 
+test('assistant names the selected lab subsection in next-class answers', () => {
+  const studentProfile = { sectionId: 'CSD', subsection: 'CSD2', branch: 'CS', year: 1 };
+  const wednesdayMorning = new Date('2026-11-04T08:45:00+05:30');
+  const answer = answerQuestion('my next class', {
+    data,
+    profile: studentProfile,
+    memory: {},
+    now: wednesdayMorning,
+  });
+  assert.equal(answer.intent, 'next-class');
+  assert.match(answer.text, /CHEMISTRY L/);
+  assert.match(answer.text, /subsection CSD2/);
+});
+
 test('assistant resolves relative days with typos and IST dates', () => {
   const variants = ['csd2 tomorrow', 'csd2 tommorow', 'csd2 tommorrow', 'csd2 tomorow', 'csd2 kal'];
   for (const query of variants) {

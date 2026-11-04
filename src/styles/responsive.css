@@ -396,6 +396,17 @@
   .week-toolbar {
     align-items: flex-start;
   }
+
+  .timetable-picker {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .timetable-picker-copy,
+  .timetable-picker-grid {
+    max-width: none;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -673,6 +684,10 @@
 
   .section-summary {
     flex-wrap: wrap;
+  }
+
+  .timetable-picker {
+    padding: 12px;
   }
 
   .day-summary-row,
@@ -1139,6 +1154,10 @@
 @media (max-width: 520px) {
   .page {
     padding: 15px 12px 38px;
+  }
+
+  .timetable-picker-grid {
+    grid-template-columns: 1fr;
   }
 
   .topbar {

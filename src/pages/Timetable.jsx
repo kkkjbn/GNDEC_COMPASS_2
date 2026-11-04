@@ -28,12 +28,14 @@ import {
 } from '../lib/utils.js';
 import {
   baseSectionFor,
+  cohortsForSection,
   compareSections,
   dayPlanOn,
   findSection,
   freeClassrooms,
   isMentoringLecture,
   lecturesOn,
+  mentoringGroupsForSection,
   periodForMinutes,
   personalizationContext,
   personalizeSection,
@@ -267,7 +269,7 @@ function LectureModal({ lecture, onClose }) {
 }
 
 export default function Timetable() {
-  const { data, profile } = useApp();
+  const { data, profile, setProfile, toast } = useApp();
   const { searchParams, navigate } = useRouter();
   const timetable = data?.timetable;
   const [selected, setSelected] = useState(null);
@@ -286,12 +288,48 @@ export default function Timetable() {
   const tab = tabParam || (teacherQuery ? 'teacher' : roomQueryParam ? 'room' : 'day');
   const selectedSectionId = searchParams.get('section') || profile.sectionId || 'ECB';
   const section = findSection(timetable, selectedSectionId);
-  const personalization = useMemo(() => personalizationContext(timetable, profile), [timetable, profile]);
+  const currentBase = useMemo(() => baseSectionFor(timetable, section) || section, [timetable, section]);
+  const validSubsections = useMemo(() => {
+    const tokens = new Set();
+    if (!currentBase) return tokens;
+    for (const cohort of cohortsForSection(timetable, currentBase)) tokens.add(cohort.id.toUpperCase());
+    for (const lecture of currentBase.lectures || []) {
+      for (const token of String(lecture.subsection || '').split(',')) {
+        const value = token.trim().toUpperCase();
+        if (value && !/M\d+$/.test(value)) tokens.add(value);
+      }
+    }
+    return tokens;
+  }, [timetable, currentBase]);
+  const urlSubsection = searchParams.get('subsection');
+  const requestedSubsection = String(
+    urlSubsection !== null
+      ? urlSubsection
+      : profile.subsection || (section?.kind === 'subgroup' && !section.mentoringGroup ? section.id : ''),
+  ).toUpperCase();
+  // A shared URL or an old profile may point at another section's lab batch.
+  // Ignore it rather than showing a subsection that does not belong here.
+  const selectedSubsection = validSubsections.has(requestedSubsection) ? requestedSubsection : '';
+  const selectedAcademicGroup = String(
+    searchParams.get('group') || profile.academicGroup || (section?.mentoringGroup ? section.id : ''),
+  ).toUpperCase();
+  const activeProfile = useMemo(
+    () => ({
+      ...profile,
+      branch: currentBase?.branch || profile.branch,
+      year: currentBase?.year || profile.year,
+      sectionId: currentBase?.id || profile.sectionId,
+      subsection: selectedSubsection,
+      academicGroup: selectedAcademicGroup,
+    }),
+    [profile, currentBase, selectedSubsection, selectedAcademicGroup],
+  );
+  const personalization = useMemo(() => personalizationContext(timetable, activeProfile), [timetable, activeProfile]);
   const profileApplies =
     Boolean(section && personalization) && baseSectionFor(timetable, section)?.id === personalization.base.id;
   const activeSection = useMemo(
-    () => (profileApplies ? personalizeSection(timetable, profile) || section : section),
-    [profileApplies, timetable, profile, section],
+    () => (profileApplies ? personalizeSection(timetable, activeProfile) || section : section),
+    [profileApplies, timetable, activeProfile, section],
   );
   const [day, setDay] = useState(() => {
     const requested = Number(searchParams.get('day'));
@@ -306,6 +344,102 @@ export default function Timetable() {
       else next.set(key, value);
     }
     navigate(`/timetable?${next.toString()}`, { replace: true, keepScroll: options.keepScroll ?? true });
+  };
+
+  const branchOptions = useMemo(() => {
+    const seen = new Set();
+    const options = [];
+    for (const item of timetable?.sections || []) {
+      if (!item.branch || seen.has(item.branch)) continue;
+      seen.add(item.branch);
+      options.push({ value: item.branch, label: `${branchShort(item.branch)} · ${item.branch}` });
+    }
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }, [timetable]);
+
+  const sectionOptions = useMemo(
+    () =>
+      [...(timetable?.sections || [])]
+        .filter((item) => item.branch === (currentBase?.branch || profile.branch))
+        .sort((a, b) => a.year - b.year || String(a.group || '').localeCompare(String(b.group || '')))
+        .map((item) => ({
+          value: item.id,
+          label: item.group ? `${item.id} · Group ${item.group} · Year ${item.year}` : `${item.id} · ${item.label}`,
+        })),
+    [timetable, currentBase, profile.branch],
+  );
+
+  const subsectionOptions = useMemo(() => {
+    const options = [{ value: '', label: 'Whole section · all lab batches' }];
+    const base = currentBase;
+    if (!base) return options;
+    const seen = new Set();
+    for (const cohort of cohortsForSection(timetable, base)) {
+      const id = cohort.id.toUpperCase();
+      seen.add(id);
+      options.push({ value: id, label: `${id} · lab batch` });
+    }
+    if (options.length === 1) {
+      for (const lecture of base.lectures || []) {
+        for (const token of String(lecture.subsection || '')
+          .split(',')
+          .map((value) => value.trim().toUpperCase())
+          .filter(Boolean)) {
+          if (seen.has(token) || /M\d+$/.test(token)) continue;
+          seen.add(token);
+          options.push({ value: token, label: `${token} · lab batch` });
+        }
+      }
+    }
+    if (selectedSubsection && !seen.has(selectedSubsection)) {
+      options.push({ value: selectedSubsection, label: `${selectedSubsection} · current selection` });
+    }
+    return options;
+  }, [timetable, currentBase, selectedSubsection]);
+
+  const applySelection = (nextSection, nextSubsection = '') => {
+    const base = baseSectionFor(timetable, nextSection) || nextSection;
+    if (!base) return;
+    const requested = String(nextSubsection || '').toUpperCase();
+    const cohorts = cohortsForSection(timetable, base);
+    const cohort = cohorts.find((item) => item.id.toUpperCase() === requested);
+    const lectureTokens = new Set();
+    for (const lecture of base.lectures || []) {
+      for (const token of String(lecture.subsection || '').split(',')) {
+        const value = token.trim().toUpperCase();
+        if (value) lectureTokens.add(value);
+      }
+    }
+    const subsection = cohort?.id?.toUpperCase() || (lectureTokens.has(requested) ? requested : '');
+    const group = mentoringGroupsForSection(timetable, base).find(
+      (item) => item.id.toUpperCase() === selectedAcademicGroup,
+    );
+    const nextProfile = {
+      ...profile,
+      branch: base.branch,
+      year: base.year,
+      sectionId: base.id,
+      subsection,
+      academicGroup: group?.id?.toUpperCase() || '',
+    };
+    setProfile(nextProfile);
+    setParam({
+      section: base.id,
+      subsection: subsection || null,
+      group: nextProfile.academicGroup || null,
+    });
+    toast(`Timetable set to ${base.label}${subsection ? ` · ${subsection}` : ''}`, 'success');
+  };
+
+  const handleBranchChange = (branch) => {
+    const candidates = (timetable?.sections || []).filter((item) => item.branch === branch);
+    const next = candidates.find((item) => item.year === currentBase?.year) || candidates[0];
+    if (next) applySelection(next, '');
+  };
+
+  const handleSectionChange = (sectionId) => {
+    const next = findSection(timetable, sectionId);
+    if (next) applySelection(next, selectedSubsection);
   };
 
   const teacherLectures = useMemo(() => (teacher ? teacherSchedule(timetable, teacher) : []), [timetable, teacher]);
@@ -381,13 +515,39 @@ export default function Timetable() {
         description="Section-wise schedule from the official FET export. Complete for first year, partial for some higher-year groups."
         actions={
           <div className="head-actions">
-            <SectionSelect value={section?.id || selectedSectionId} onChange={(value) => setParam({ section: value })} />
             <Link to="/ask?q=My%20next%20class" className="btn secondary">
               Ask Compass
             </Link>
           </div>
         }
       />
+
+      <div className="timetable-picker">
+        <div className="timetable-picker-copy">
+          <span className="eyebrow">YOUR TIMETABLE</span>
+          <small>Choose branch, section and lab subsection. This selection is used by Timetable, Today and Ask Compass on this device.</small>
+        </div>
+        <div className="timetable-picker-grid">
+          <Select
+            label="Branch"
+            value={currentBase?.branch || profile.branch || ''}
+            onChange={handleBranchChange}
+            options={branchOptions}
+          />
+          <Select
+            label="Section"
+            value={currentBase?.id || ''}
+            onChange={handleSectionChange}
+            options={sectionOptions}
+          />
+          <Select
+            label="Subsection"
+            value={selectedSubsection}
+            onChange={(value) => currentBase && applySelection(currentBase, value)}
+            options={subsectionOptions}
+          />
+        </div>
+      </div>
 
       {activeSection?.personalized && (activeSection.cohortId || activeSection.academicGroup || activeSection.mentor) && (
         <div className="mode-banner mentoring-banner">
@@ -396,7 +556,8 @@ export default function Timetable() {
           </span>
           <div>
             <b>
-              Personalized for {[profile.branch, profile.section, profile.subsection].filter(Boolean).join(' / ') || activeSection.id}
+              Personalized for {currentBase?.label || activeSection.id}
+              {activeProfile.subsection ? ` · ${activeProfile.subsection}` : ''}
               {activeSection.academicGroup ? ` · Academic group ${activeSection.academicGroup}` : ''}
             </b>
             <small>

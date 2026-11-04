@@ -26,7 +26,7 @@ import {
 import { Link, useRouter } from '../lib/router.jsx';
 import { useApp } from '../context.jsx';
 import { answerQuestion, ASSISTANT_STARTERS, assistantSuggestions } from '../lib/assistant.js';
-import { findSection } from '../lib/timetable.js';
+import { findSection, personalizeSection } from '../lib/timetable.js';
 import { istDateTimeLabel } from '../lib/utils.js';
 import { Avatar, Badge, CopyButton, InlineNotice, Modal, RichText } from '../components/ui.jsx';
 
@@ -195,7 +195,7 @@ export default function Ask() {
   profileRef.current = profile;
   memoryRef.current = assistantMemory;
 
-  const section = findSection(data?.timetable, profile.sectionId);
+  const section = personalizeSection(data?.timetable, profile) || findSection(data?.timetable, profile.sectionId);
   const starters = useMemo(() => {
     const values = [
       ...ASSISTANT_STARTERS.slice(0, 8),
@@ -459,8 +459,15 @@ export default function Ask() {
             </div>
             <div className="ask-profile-section">
               <span>
-                <b>{section?.id || profile.sectionId || 'Section not set'}</b>
-                <small>{section?.label || 'Set your section for personalised answers'}</small>
+                <b>
+                  {[section?.id || profile.sectionId, section?.cohortId].filter(Boolean).join(' · ') ||
+                    'Section not set'}
+                </b>
+                <small>
+                  {section?.label
+                    ? `${section.label}${section.cohortId ? ` · ${section.cohortId} lab batch` : ''}`
+                    : 'Set your section for personalised answers'}
+                </small>
               </span>
               <Link to="/settings" className="icon-btn" aria-label="Edit profile">
                 <Settings size={15} />

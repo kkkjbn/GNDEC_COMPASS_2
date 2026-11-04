@@ -229,7 +229,7 @@ export default function Today() {
           </h1>
           <p className="hero-lede">
             {section
-              ? `You’re in ${section.label}. Here’s your day, your rooms and everything happening around campus.`
+              ? `You’re in ${section.label}${section.cohortId ? ` · ${section.cohortId}` : ''}. Here’s your day, your rooms and everything happening around campus.`
               : 'Your timetable, campus routes, people and study material — all in one calm place.'}
           </p>
           <div className="hero-actions">

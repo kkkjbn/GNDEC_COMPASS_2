@@ -57,6 +57,48 @@
   padding: 20px;
 }
 
+.timetable-picker {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  box-shadow: var(--shadow-xs);
+}
+
+.timetable-picker-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 34ch;
+}
+
+.timetable-picker-copy small {
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.timetable-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(130px, 1fr));
+  gap: 9px;
+  flex: 1;
+  max-width: 560px;
+}
+
+.timetable-picker-grid .select-field {
+  min-width: 0;
+}
+
+.timetable-picker-grid .select-wrap select {
+  min-width: 0;
+}
+
 .timetable-toolbar {
   display: flex;
   flex-direction: column;
