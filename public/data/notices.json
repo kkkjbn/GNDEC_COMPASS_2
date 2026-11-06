@@ -1,12 +1,32 @@
 {
-  "generatedAt": "2026-11-02T11:39:01.099Z",
+  "generatedAt": "2026-11-06T15:56:22.802Z",
   "notices": [
     {
-      "id": "gndec-homepage-03b408ca8a9840bcc16e",
-      "title": "Notice and Complaint Form regarding Caste Based Discrimination",
+      "id": "gndec-erp-notice-board-4e91cea1eef4810d",
+      "title": "Tentative Date Sheet for Regular End Semester Examinations – November 2026",
+      "date": "2026-11-06",
+      "displayDate": "November 6, 2026",
+      "url": "https://erp.gndec.ac.in/noticeboard/tentative-date-sheet-for-end-semester-examinations-%E2%80%93-november-2026",
+      "author": "coe_office",
+      "source": "GNDEC ERP Notice Board",
+      "kind": "exam"
+    },
+    {
+      "id": "gndec-homepage-dd273ace53074bf51006",
+      "title": "12th International Conference on Advancements and Futuristic Trends in Mechanical and Materials Engineering",
       "date": "2026-10-24",
       "displayDate": "October 24, 2026",
-      "url": "https://gndec.ac.in/?q=node/435",
+      "url": "https://gndec.ac.in/aftmme-web/",
+      "author": "",
+      "source": "GNDEC homepage",
+      "kind": "event"
+    },
+    {
+      "id": "gndec-homepage-d600330e73ed72b8f94d",
+      "title": "Address by Prominent Personalities",
+      "date": "2026-10-24",
+      "displayDate": "October 24, 2026",
+      "url": "https://gndec.ac.in/gallery/index.php?/category/37",
       "author": "",
       "source": "GNDEC homepage",
       "kind": "general"
@@ -22,14 +42,14 @@
       "kind": "event"
     },
     {
-      "id": "gndec-homepage-376a23227ac1d8c1d31f",
-      "title": "Notice Board",
+      "id": "gndec-homepage-ba1198e8dd1771d179c9",
+      "title": "Fee Notice Jul - Dec 2026 (B. Architecture)",
       "date": "2026-10-24",
       "displayDate": "October 24, 2026",
-      "url": "https://erp.gndec.ac.in/notice",
+      "url": "https://gndec.ac.in/sites/default/files/fnbarchjul26.pdf",
       "author": "",
       "source": "GNDEC homepage",
-      "kind": "general"
+      "kind": "admin"
     },
     {
       "id": "gndec-homepage-65e9426e520a1ff6d1a3",
@@ -42,26 +62,6 @@
       "kind": "admin"
     },
     {
-      "id": "gndec-homepage-ba1198e8dd1771d179c9",
-      "title": "Fee Notice Jul - Dec 2026 (B. Architecture)",
-      "date": "2026-10-24",
-      "displayDate": "October 24, 2026",
-      "url": "https://gndec.ac.in/sites/default/files/fnbarchjul26.pdf",
-      "author": "",
-      "source": "GNDEC homepage",
-      "kind": "admin"
-    },
-    {
-      "id": "gndec-homepage-dd273ace53074bf51006",
-      "title": "12th International Conference on Advancements and Futuristic Trends in Mechanical and Materials Engineering",
-      "date": "2026-10-24",
-      "displayDate": "October 24, 2026",
-      "url": "https://gndec.ac.in/aftmme-web/",
-      "author": "",
-      "source": "GNDEC homepage",
-      "kind": "event"
-    },
-    {
       "id": "gndec-homepage-187310a985362af06ec8",
       "title": "FELICITATIONS",
       "date": "2026-10-24",
@@ -72,11 +72,21 @@
       "kind": "general"
     },
     {
-      "id": "gndec-homepage-d600330e73ed72b8f94d",
-      "title": "Address by Prominent Personalities",
+      "id": "gndec-homepage-03b408ca8a9840bcc16e",
+      "title": "Notice and Complaint Form regarding Caste Based Discrimination",
       "date": "2026-10-24",
       "displayDate": "October 24, 2026",
-      "url": "https://gndec.ac.in/gallery/index.php?/category/37",
+      "url": "https://gndec.ac.in/?q=node/435",
+      "author": "",
+      "source": "GNDEC homepage",
+      "kind": "general"
+    },
+    {
+      "id": "gndec-homepage-376a23227ac1d8c1d31f",
+      "title": "Notice Board",
+      "date": "2026-10-24",
+      "displayDate": "October 24, 2026",
+      "url": "https://erp.gndec.ac.in/notice",
       "author": "",
       "source": "GNDEC homepage",
       "kind": "general"
@@ -172,16 +182,6 @@
       "kind": "exam"
     },
     {
-      "id": "gndec-erp-notice-board-c8a42f38584d0ae20dc5",
-      "title": "RE-OPENING OF ONLINE REGISTRATION PROCESS FOR THE COURSE(S) DETENTION (JULY-DEC, 2026)",
-      "date": "2026-09-02",
-      "displayDate": "September 2, 2026",
-      "url": "https://erp.gndec.ac.in/noticeboard/re-opening-of-online-registration-process-for-the-courses-detention-july-dec-2026",
-      "author": "administrator",
-      "source": "GNDEC ERP Notice Board",
-      "kind": "admin"
-    },
-    {
       "id": "gndec-erp-notice-board-fd4a1f10997cc6146763",
       "title": "Examination form filling process of Makeup Examination May-2026",
       "date": "2026-09-02",
@@ -190,6 +190,16 @@
       "author": "coe_office",
       "source": "GNDEC ERP Notice Board",
       "kind": "exam"
+    },
+    {
+      "id": "gndec-erp-notice-board-c8a42f38584d0ae20dc5",
+      "title": "RE-OPENING OF ONLINE REGISTRATION PROCESS FOR THE COURSE(S) DETENTION (JULY-DEC, 2026)",
+      "date": "2026-09-02",
+      "displayDate": "September 2, 2026",
+      "url": "https://erp.gndec.ac.in/noticeboard/re-opening-of-online-registration-process-for-the-courses-detention-july-dec-2026",
+      "author": "administrator",
+      "source": "GNDEC ERP Notice Board",
+      "kind": "admin"
     },
     {
       "id": "gndec-erp-notice-board-0fe40e75603dbdeba31f",
@@ -242,16 +252,6 @@
       "kind": "admin"
     },
     {
-      "id": "gndec-erp-notice-board-ebb5efd3cffb18b5f6e3",
-      "title": "Struck_off_Notice_43_25.07.26.pdf",
-      "date": "2026-07-28",
-      "displayDate": "July 28, 2026",
-      "url": "https://erp.gndec.ac.in/noticeboard/struck-off-notice-43-250726pdf",
-      "author": "administrator",
-      "source": "GNDEC ERP Notice Board",
-      "kind": "admin"
-    },
-    {
       "id": "gndec-erp-notice-board-a5bcc5756285fc474231",
       "title": "Six Months Progress Presentation of Ms. Ritu, PhD. Regd. No.1903009, URN 1935251",
       "date": "2026-07-28",
@@ -260,6 +260,16 @@
       "author": "administrator",
       "source": "GNDEC ERP Notice Board",
       "kind": "general"
+    },
+    {
+      "id": "gndec-erp-notice-board-ebb5efd3cffb18b5f6e3",
+      "title": "Struck_off_Notice_43_25.07.26.pdf",
+      "date": "2026-07-28",
+      "displayDate": "July 28, 2026",
+      "url": "https://erp.gndec.ac.in/noticeboard/struck-off-notice-43-250726pdf",
+      "author": "administrator",
+      "source": "GNDEC ERP Notice Board",
+      "kind": "admin"
     },
     {
       "id": "gndec-erp-notice-board-5419b59fc9cd931dc978",
